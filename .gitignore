@@ -1,0 +1,30 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Models (downloaded at runtime)
+Models/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# App bundle
+*.app
+
+# Archives
+*.xcarchive

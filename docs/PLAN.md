@@ -132,19 +132,19 @@ aawaaz/
 
 #### Step 1.1: Project Setup
 
-- [ ] Create Xcode project (macOS App, SwiftUI lifecycle)
-- [ ] Configure as menu bar app (LSUIElement in Info.plist)
-- [ ] Add whisper.cpp as Swift Package dependency
+- [x] Create Xcode project (macOS App, SwiftUI lifecycle)
+- [x] Configure as menu bar app (LSUIElement in Info.plist)
+- [x] Add whisper.cpp as Swift Package dependency
 - [ ] Add ONNX Runtime Swift package (for Silero VAD)
-- [ ] Set up code signing with microphone entitlement
-- [ ] Set up .gitignore (Models/, .build/, etc.)
+- [x] Set up code signing with microphone entitlement
+- [x] Set up .gitignore (Models/, .build/, etc.)
 
 #### Step 1.2: Menu Bar + Basic UI
 
-- [ ] `AawaazApp.swift` — MenuBarExtra with a simple popover
-- [ ] `MenuBarView.swift` — Status indicator (idle/listening/processing), model name, quit button
-- [ ] `AppState.swift` — Observable state: status enum, current transcription text, selected model
-- [ ] Menu bar icon (microphone SF Symbol for now)
+- [x] `AawaazApp.swift` — MenuBarExtra with a simple popover
+- [x] `MenuBarView.swift` — Status indicator (idle/listening/processing), model name, quit button
+- [x] `AppState.swift` — Observable state: status enum, current transcription text, selected model
+- [x] Menu bar icon (microphone SF Symbol for now)
 
 #### Step 1.3: Audio Capture
 

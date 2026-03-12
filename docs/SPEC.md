@@ -14,19 +14,25 @@ Aawaaz (आवाज़ — "voice" in Hindi) is a system-wide, real-time, fully
 ## Core Value Proposition
 
 1. **Fully local** — All transcription happens on-device. No audio ever leaves the machine. Privacy by default.
-2. **System-wide** — Works in any app (Slack, VS Code, browser, Notes, Terminal, etc.) via macOS Accessibility API.
+2. **System-wide** — Works in any app (Slack, VS Code, browser, Notes, Terminal, etc.) using the most reliable available insertion path, with macOS Accessibility as the default starting point.
 3. **Hinglish-native** — First-class support for Hindi-English code-switching (speaking Hindi mixed with English words mid-sentence).
-4. **Fast** — Competitive with WisprFlow's ~1-2s latency for short phrases using whisper.cpp with Metal GPU acceleration.
+4. **Fast** — Targets a competitive, WisprFlow-like experience for short phrases, with implementation details and latency trade-offs validated on real Apple Silicon hardware.
 5. **Beautiful & minimal** — Small floating overlay + menu bar presence. Stays out of the way.
+
+## Implementation Notes
+
+- This specification defines product requirements and UX goals, not a mandate to use one specific macOS API everywhere.
+- Where concrete implementation examples are given below (hotkeys, Accessibility insertion, streaming strategy), treat them as likely starting points that must still be validated against real app compatibility, permission behavior, and measured latency.
+- If implementation evidence shows a named approach is insufficient, prefer changing the implementation approach over weakening the product outcome.
 
 ## User Experience
 
 ### Activation Flow
 
-1. User presses a configurable global hotkey (e.g., hold `Fn`, or double-tap `Ctrl`)
+1. User presses a configurable global hotkey (examples: hold-to-talk or toggle-based shortcuts; the exact default should be chosen only after validating reliability and conflict rate on macOS)
 2. A small floating overlay appears near the cursor/focused text field, showing a recording indicator
 3. User speaks naturally (in English, Hindi, or mixed Hinglish)
-4. Real-time transcription appears in the overlay as speech is processed
+4. Interim transcription or other live feedback appears in the overlay while speech is being processed, as allowed by the chosen latency/accuracy strategy
 5. On release of hotkey (or silence timeout), final transcription is inserted into the focused text field
 6. Overlay dismisses
 
@@ -88,6 +94,8 @@ Aawaaz (आवाज़ — "voice" in Hindi) is a system-wide, real-time, fully
 
 ### Streaming Architecture
 
+The exact implementation can range from VAD-segmented final inference to more streaming-oriented interim inference. The chosen approach should be driven by measured latency and perceived UX quality, not by attachment to a single pipeline shape.
+
 ```
 Microphone (AVAudioEngine, 16kHz mono)
     │
@@ -117,6 +125,8 @@ Silero VAD (per 30ms frame)
 ```
 
 ### Latency Budget (turbo model, M2+)
+
+This is a target envelope, not a guarantee. It should be validated early on representative Apple Silicon hardware. If the measured experience is not competitive enough, interim inference or other latency reductions should move earlier in the roadmap.
 
 | Stage | Time |
 |-------|------|
@@ -161,16 +171,18 @@ Silero VAD (per 30ms frame)
 
 ### Primary: Accessibility API (AXUIElement)
 
+Accessibility should be the default insertion path when it works well, but "system-wide" support should be interpreted as "use the most reliable insertion strategy per app," not "force one AX mutation path everywhere."
+
 1. Get the frontmost application via `NSWorkspace.shared.frontmostApplication`
 2. Get the AX application element via `AXUIElementCreateApplication(pid)`
 3. Find the focused UI element via `kAXFocusedUIElementAttribute`
-4. Check if it accepts text input
-5. Get current value and selection range
-6. Insert transcription at cursor position via `AXUIElementSetAttributeValue`
+4. Verify the element is actually editable/settable for the current app
+5. Get current value and selection range where available
+6. Insert transcription at the cursor using the least-destructive strategy that works for that app/element (for example selected-text replacement, direct AX mutation, or a validated fallback)
 
 ### Fallback: Keystroke Simulation
 
-For apps that don't properly expose AX text elements (some Electron apps, games):
+For apps that don't properly expose usable AX text elements (some Electron apps, games, terminals, or custom editors), paste-based or synthesized-keystroke fallback may be more reliable than direct AX mutation:
 1. Copy transcription to clipboard
 2. Simulate Cmd+V keystroke via `CGEventPost`
 

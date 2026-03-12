@@ -57,6 +57,13 @@
 4. **Async/await**: All heavy work (inference, model loading) runs on background tasks using Swift concurrency. UI never blocks.
 5. **Protocol-oriented**: Key components (transcription engine, text inserter, LLM processor) are protocol-defined so implementations can be swapped.
 
+### Implementation Guidance
+
+- Treat concrete APIs named in this document as strong starting points, not irrevocable decisions. When implementation begins, verify them against the actual UX and compatibility requirements before locking them in.
+- For system integration work (hotkeys, Accessibility insertion, event synthesis), prefer a short spike and test matrix over assuming the first plausible API will generalize across macOS apps.
+- Benchmark early on target Apple Silicon hardware. If measured latency misses the UX bar, reprioritize the implementation plan rather than preserving phase order for its own sake.
+- Choose one canonical runtime storage location for downloaded models and keep code, docs, onboarding, and local development conventions aligned around it.
+
 ## Project Structure
 
 ```
@@ -111,7 +118,7 @@ aawaaz/
 ├── Resources/
 │   ├── Assets.xcassets                  # App icon, menu bar icon
 │   └── silero_vad.onnx                  # Silero VAD model (or .mlmodel if CoreML converted)
-├── Models/                              # Downloaded GGML models at runtime (gitignored)
+├── Models/                              # Optional local dev fixtures only; runtime app models should live in Application Support
 ├── Tests/
 │   ├── VADProcessorTests.swift
 │   ├── WhisperManagerTests.swift
@@ -164,6 +171,7 @@ aawaaz/
 
 #### Step 1.5: Whisper Integration
 
+- [ ] Confirm the canonical model storage path and keep all code/docs consistent with it (prefer `~/Library/Application Support/Aawaaz/Models/` for runtime downloads; use repo-local `Models/` only for development fixtures if intentionally needed)
 - [ ] `ModelManager.swift` — Check for models in ~/Library/Application Support/Aawaaz/Models/
 - [ ] `ModelCatalog.swift` — Hardcoded catalog of available models with download URLs (Hugging Face GGML repos)
 - [ ] `ModelDownloadView.swift` — Download model with progress bar (URLSession download task)
@@ -177,6 +185,7 @@ aawaaz/
 - [ ] On speech end: send audio buffer to WhisperManager, receive text
 - [ ] Publish transcription result to AppState
 - [ ] Copy result to clipboard automatically (NSPasteboard)
+- [ ] Benchmark end-to-end latency on representative short and medium utterances; if VAD-segmented final inference does not meet the UX bar, pull interim/streaming work forward instead of deferring it to a later polish phase
 
 #### Step 1.7: Overlay Window
 
@@ -188,8 +197,9 @@ aawaaz/
 
 #### Step 1.8: Global Hotkey
 
-- [ ] `HotkeyManager.swift` — Register global hotkey using `NSEvent.addGlobalMonitorForEvents` + `addLocalMonitorForEvents`
-- [ ] Default: hold right Option key (less likely to conflict)
+- [ ] Evaluate candidate hotkey mechanisms (`RegisterEventHotKey`, event taps, `NSEvent` monitors, or other native options) against system-wide reliability, modifier-only support, hold/release detection, permission behavior, and conflict rate
+- [ ] `HotkeyManager.swift` — Implement the most reliable validated option; do not assume `NSEvent` monitors are sufficient until tested
+- [ ] Choose the default shortcut only after testing conflict rate and ergonomics; do not assume a modifier-only shortcut (for example right Option) is viable across target apps
 - [ ] Hold mode: key down → start listening, key up → stop and process
 - [ ] Toggle mode: key down → toggle listening state
 - [ ] `HotkeyConfiguration.swift` — Persist chosen key + mode in UserDefaults
@@ -224,13 +234,15 @@ aawaaz/
 
 #### Step 2.2: AX API Text Insertion
 
+- [ ] Build a compatibility matrix across representative targets: AppKit text fields, AppKit text views, SwiftUI text inputs, Electron apps, browsers/contenteditable, Terminal/code editors
+- [ ] Evaluate insertion strategies before locking one in: direct AX value mutation, selected-text replacement, keystroke simulation, paste-based fallback
 - [ ] `AccessibilityManager.swift`:
   - [ ] Get frontmost app PID via `NSWorkspace.shared.frontmostApplication`
   - [ ] Create AX element: `AXUIElementCreateApplication(pid)`
   - [ ] Get focused element: query `kAXFocusedUIElementAttribute`
-  - [ ] Verify it's a text element (check `kAXRoleAttribute` == `kAXTextFieldRole` or `kAXTextAreaRole`)
-  - [ ] Get current value and selection range
-  - [ ] Insert text at cursor: set `kAXValueAttribute` with text spliced at selection
+  - [ ] Verify the focused element is actually editable/settable; do not assume `AXTextField`/`AXTextArea` coverage is sufficient for all supported apps
+  - [ ] Get current value and selection range where available
+  - [ ] Prefer the least-destructive insertion strategy that works for the current app/element; do not assume whole-value `kAXValueAttribute` replacement is universally correct
   - [ ] Update cursor position to end of inserted text
 
 #### Step 2.3: Fallback: Keystroke Simulation
@@ -439,14 +451,16 @@ Same reasoning as above. Same developer ecosystem, same model format, same Swift
 
 ### Hold-to-talk vs. Toggle: Default?
 
-**Decision**: Default to **hold-to-talk** (hold right Option key). It is more intuitive for short dictation and prevents the "forgot to turn it off" problem. Toggle mode available in settings for longer dictation sessions.
+**Working hypothesis**: Default to **hold-to-talk** because it is more intuitive for short dictation and prevents the "forgot to turn it off" problem. Confirm the actual shortcut choice only after validating hotkey capture reliability and conflicts in real apps. Toggle mode should remain available in settings for longer dictation sessions.
 
 ### Audio chunk size for streaming
 
-**Decision**: VAD-based segmentation rather than fixed chunks. Speech boundaries are natural break points. This gives:
+**Working hypothesis**: Start with VAD-based segmentation rather than fixed chunks. Speech boundaries are natural break points. This gives:
 - Lower latency (process as soon as speech ends, don't wait for fixed interval)
 - Better accuracy (Whisper gets complete utterances, not arbitrary cuts)
 - More efficient (skip silence entirely)
+
+Validate this against real UX expectations. If end-to-end latency still feels too slow, add interim inference or more streaming-oriented behavior earlier instead of treating it as Phase 5 polish.
 
 For long continuous speech without pauses, impose a maximum segment duration of 15 seconds (process what we have and continue buffering).
 

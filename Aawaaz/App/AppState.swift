@@ -16,8 +16,8 @@ enum TranscriptionStatus: String {
     var iconName: String {
         switch self {
         case .idle: return "mic"
-        case .listening: return "mic.fill"
-        case .processing: return "waveform"
+        case .listening: return "waveform"
+        case .processing: return "ellipsis.circle"
         }
     }
 }

@@ -173,17 +173,17 @@ struct OnboardingView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(accessibilityGranted ? .green : .orange)
 
-            Text("Input Monitoring")
+            Text("Accessibility")
                 .font(.title2.bold())
 
-            Text("Aawaaz needs Input Monitoring (Accessibility) permission to detect your global hotkey shortcut, even when other apps are focused.")
+            Text("Aawaaz needs Accessibility permission to detect your global hotkey shortcut, even when other apps are focused.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
 
             if accessibilityGranted {
-                Label("Input monitoring granted", systemImage: "checkmark.circle.fill")
+                Label("Accessibility granted", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.headline)
             } else {
@@ -194,7 +194,7 @@ struct OnboardingView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Text("You may need to add Aawaaz in System Settings → Privacy & Security → Input Monitoring")
+                    Text("Add Aawaaz in System Settings → Privacy & Security → Accessibility")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -320,7 +320,7 @@ private enum OnboardingStep: Int, CaseIterable, Identifiable {
         switch self {
         case .welcome: return "Welcome"
         case .microphone: return "Microphone"
-        case .accessibility: return "Access"
+        case .accessibility: return "Accessibility"
         case .model: return "Model"
         }
     }

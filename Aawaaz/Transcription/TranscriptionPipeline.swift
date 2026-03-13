@@ -86,8 +86,8 @@ final class TranscriptionPipeline {
 
         // Wire: speech segment → Whisper transcription
         state.onSpeechSegment = { [weak self] samples in
-            guard let self else { return }
-            Task { [weak self] in
+            guard self != nil else { return }
+            Task { @MainActor [weak self] in
                 await self?.processSpeechSegment(samples)
             }
         }
@@ -102,8 +102,11 @@ final class TranscriptionPipeline {
 
         // Wire: audio samples → VAD (dispatched to serial queue for thread safety)
         audioCapture.onSamplesReceived = { [weak self] samples in
-            self?.vadQueue.async { [weak self] in
-                try? self?.vadProcessor?.feed(samples: samples)
+            guard let self else { return }
+            let vadQueue = self.vadQueue
+            let vadProcessor = self.vadProcessor
+            vadQueue.async {
+                try? vadProcessor?.feed(samples: samples)
             }
         }
 

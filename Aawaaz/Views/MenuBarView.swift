@@ -70,7 +70,7 @@ struct MenuBarView: View {
             if !PermissionsManager.isAccessibilityGranted {
                 Divider()
                 VStack(alignment: .leading, spacing: 4) {
-                    Label("Hotkey requires Input Monitoring", systemImage: "exclamationmark.shield")
+                    Label("Hotkey requires Accessibility permission", systemImage: "exclamationmark.shield")
                         .font(.caption)
                         .foregroundStyle(.orange)
                     Button("Grant Access") {

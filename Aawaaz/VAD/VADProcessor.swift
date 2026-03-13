@@ -7,7 +7,7 @@ import OnnxRuntimeBindings
 /// calls. Call ``resetState()`` when starting a new recording session.
 ///
 /// Thread safety: not thread-safe. Call from a single serial queue.
-final class VADProcessor {
+final class VADProcessor: @unchecked Sendable {
 
     // MARK: - Constants
 

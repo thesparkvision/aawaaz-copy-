@@ -39,10 +39,10 @@ final class PermissionsManager {
     }
 
     /// Prompt the user to grant accessibility permission.
-    /// Opens the system prompt if permission has not been granted.
+    /// Opens System Settings directly to the Accessibility pane, which is more
+    /// reliable than AXIsProcessTrustedWithOptions for archived/installed apps.
     static func promptAccessibility() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        openAccessibilitySettings()
     }
 
     /// Open System Settings to the Accessibility privacy pane.

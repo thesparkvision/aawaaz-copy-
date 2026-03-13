@@ -400,6 +400,37 @@ aawaaz/
 - [ ] Update `OverlayView.swift` and `OverlayWindowController.swift` with the new visualization
 - [ ] Keep the overlay small and unobtrusive — it should not cover the text field being dictated into
 
+#### Step 2.5.3: Fix Hindi-to-English Translation in Hinglish Mode
+
+> **Bug**: When speaking Hinglish (Hindi mixed with English), Whisper sometimes *translates* Hindi words to English instead of transcribing them. For example, saying "mujhe ek meeting schedule karni hai" may output "I need to schedule a meeting" instead of preserving the Hindi words. This happens because: (1) `params.translate` is not explicitly set to `false`, and (2) Hinglish mode uses `language = nil` (auto-detect), which lets Whisper flip unpredictably between transcription and translation.
+
+**Immediate fixes** (apply to `WhisperManager.swift`):
+
+- [ ] Explicitly set `params.translate = false` in `transcribe()` to force transcription mode (never translate)
+- [ ] For `.hinglish` language mode, change from `language = nil` to `language = "hi"` — this tells Whisper to expect Hindi, and it will naturally pick up English words embedded in Hindi speech without translating them. Auto-detect (`nil`) is unreliable for code-switching
+- [ ] For `.auto` mode, keep `language = nil` but still set `translate = false`
+
+**initial_prompt biasing** (improves Hinglish output quality):
+
+- [ ] When language mode is `.hinglish`, set `params.initial_prompt` to a Romanized Hindi-English sample:
+  ```
+  "Yeh ek Hinglish example hai. Meeting schedule karna hai, please email bhej do."
+  ```
+  This primes Whisper to output code-switched text in the user's expected script (Roman/Latin for Hindi words mixed with English) instead of Devanagari or full translation
+- [ ] Add a user preference for Hinglish script output:
+  - **Romanized** (default): "mujhe meeting schedule karni hai" — initial_prompt uses Roman script samples
+  - **Devanagari**: "मुझे meeting schedule करनी है" — initial_prompt uses Devanagari samples
+  - **Mixed**: Let Whisper decide per word — no script bias in prompt
+- [ ] Store preference in UserDefaults, add to Language section in Settings
+
+**How WisprFlow handles this** (for reference — our approach parallels theirs):
+- They use **custom fine-tuned Hinglish models** (we plan IndicWhisper in Phase 5)
+- **Session-level language priority** — user sets 2-3 languages (we have language mode selector)
+- **LLM post-processing** normalizes script inconsistencies (our Phase 3)
+- **Learns from corrections** over time (our auto-learn in Phase 3.5)
+
+**Long-term** (Phase 5): Evaluate fine-tuned models like [Whisper-Hindi2Hinglish](https://huggingface.co/Oriserve/Whisper-Hindi2Hinglish-Prime) converted to GGML, and IndicWhisper from AI4Bharat
+
 ---
 
 ### Phase 3: Text Processing & LLM Post-Processing
@@ -938,6 +969,7 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
 | 12 | Sound Effects | 5 (Step 5.1) | Pure UX polish. No dependencies. |
 | 13 | Per-App Insertion Method Override | 5 (Step 5.4) | Settings UI for existing code. Low priority polish. |
 | 14 | Model Auto-Update Notifications | 5 (Step 5.5) | Nice-to-have. Only network feature besides downloads/remote LLM. |
+| — | Fix Hindi→English translation in Hinglish mode | 2.5 (Step 2.5.3) | Active bug. Whisper translates Hindi instead of transcribing. Quick params fix + initial_prompt biasing. |
 
 ---
 
@@ -1013,6 +1045,7 @@ Six external dependencies total (whisper.cpp, onnxruntime-swift, llama.cpp, SQLi
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|------------|
 | Hinglish accuracy insufficient | Medium | High | Test early (Phase 1). IndicWhisper models as fallback. LoRA fine-tuning as escape hatch |
+| Whisper translates Hindi instead of transcribing | High | High | Set `params.translate = false` explicitly. For Hinglish mode, set language to `"hi"` instead of auto-detect. Use initial_prompt with Romanized Hindi samples to bias output script. LLM post-processing as safety net (Phase 3). Fine-tuned Hinglish models long-term (Phase 5) |
 | AX API doesn't work in some apps | High | Medium | Keystroke simulation fallback. Per-app override settings (Phase 5.4 UI). Document known incompatible apps |
 | whisper.cpp Swift bindings have issues | Low | High | Well-established bindings, SwiftUI example in repo. Fallback: use C API directly from Swift |
 | LLM over-corrects transcription | Medium | Medium | Configurable cleanup levels. Show raw vs. cleaned text. Pre-LLM text processing handles basics without LLM |

@@ -3,34 +3,34 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA000001 /* AawaazApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001; };
-		AA000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002; };
-		AA000003 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003; };
-		AA000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100004; };
-		AA000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100005; };
-		AA000010 /* AudioCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010; };
-		AA000011 /* AudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011; };
-		AA000012 /* VADProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012; };
-		AA000013 /* VADState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013; };
-		AA000014 /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = AA100014; };
-		AA000020 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = AA900010; };
-		AA000015 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100015; };
-		AA000016 /* ModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100016; };
-		AA000017 /* WhisperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017; };
-		AA000018 /* ModelDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018; };
-		AA000019 /* TranscriptionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019; };
-		AA000021 /* whisper in Frameworks */ = {isa = PBXBuildFile; productRef = AA900020; };
-		AA000030 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030; };
-		AA000031 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031; };
-		AA000032 /* HotkeyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032; };
-		AA000033 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100033; };
-		AA000034 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100034; };
-		AA000035 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100035; };
-		AA000036 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100036; };
+		AA000001 /* AawaazApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* AawaazApp.swift */; };
+		AA000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* AppState.swift */; };
+		AA000003 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003 /* MenuBarView.swift */; };
+		AA000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100004 /* SettingsView.swift */; };
+		AA000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100005 /* Assets.xcassets */; };
+		AA000010 /* AudioCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010 /* AudioCaptureManager.swift */; };
+		AA000011 /* AudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* AudioDevice.swift */; };
+		AA000012 /* VADProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* VADProcessor.swift */; };
+		AA000013 /* VADState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* VADState.swift */; };
+		AA000014 /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = AA100014 /* silero_vad.onnx */; };
+		AA000015 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100015 /* ModelManager.swift */; };
+		AA000016 /* ModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100016 /* ModelCatalog.swift */; };
+		AA000017 /* WhisperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017 /* WhisperManager.swift */; };
+		AA000018 /* ModelDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018 /* ModelDownloadView.swift */; };
+		AA000019 /* TranscriptionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019 /* TranscriptionPipeline.swift */; };
+		AA000020 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = AA900010 /* onnxruntime */; };
+		AA000021 /* whisper in Frameworks */ = {isa = PBXBuildFile; productRef = AA900020 /* whisper */; };
+		AA000030 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* OverlayView.swift */; };
+		AA000031 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031 /* OverlayWindowController.swift */; };
+		AA000032 /* HotkeyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032 /* HotkeyConfiguration.swift */; };
+		AA000033 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100033 /* HotkeyManager.swift */; };
+		AA000034 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100034 /* PermissionsManager.swift */; };
+		AA000035 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100035 /* OnboardingView.swift */; };
+		AA000036 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100036 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,7 +75,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AA300000 /* Root */ = {
+		AA300000 = {
 			isa = PBXGroup;
 			children = (
 				AA300001 /* Aawaaz */,
@@ -140,7 +140,6 @@
 				AA100005 /* Assets.xcassets */,
 				AA100014 /* silero_vad.onnx */,
 			);
-			name = Resources;
 			path = Resources;
 			sourceTree = "<group>";
 		};
@@ -180,20 +179,20 @@
 			path = Hotkey;
 			sourceTree = "<group>";
 		};
-		AA300011 /* Permissions */ = {
-			isa = PBXGroup;
-			children = (
-				AA100034 /* PermissionsManager.swift */,
-			);
-			path = Permissions;
-			sourceTree = "<group>";
-		};
 		AA300010 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				AA100008 /* Aawaaz.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AA300011 /* Permissions */ = {
+			isa = PBXGroup;
+			children = (
+				AA100034 /* PermissionsManager.swift */,
+			);
+			path = Permissions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -228,7 +227,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					AA400001 = {
 						CreatedOnToolsVersion = 15.0;
@@ -243,10 +242,10 @@
 				en,
 				Base,
 			);
-			mainGroup = AA300000 /* Root */;
+			mainGroup = AA300000;
 			packageReferences = (
 				AA900001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
-				AA900002 /* XCLocalSwiftPackageReference "AawaazDependencies" */,
+				AA900002 /* XCLocalSwiftPackageReference "." */,
 			);
 			productRefGroup = AA300010 /* Products */;
 			projectDirPath = "";
@@ -334,6 +333,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -357,6 +357,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -396,6 +397,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -412,6 +414,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -424,6 +427,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -448,6 +454,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -487,6 +496,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		AA900002 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		AA900001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -497,13 +513,6 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		AA900002 /* XCLocalSwiftPackageReference "AawaazDependencies" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = .;
-		};
-/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		AA900010 /* onnxruntime */ = {
@@ -516,7 +525,6 @@
 			productName = whisper;
 		};
 /* End XCSwiftPackageProductDependency section */
-
 	};
 	rootObject = AA800001 /* Project object */;
 }

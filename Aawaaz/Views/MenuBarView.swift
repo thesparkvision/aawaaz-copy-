@@ -46,7 +46,28 @@ struct MenuBarView: View {
                     .lineLimit(3)
             }
 
+            // Pipeline error
+            if let error = appState.pipelineError {
+                Divider()
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(2)
+            }
+
             Divider()
+
+            // Listen / Stop
+            Button {
+                appState.toggleListening()
+            } label: {
+                if appState.pipeline.isListening {
+                    Label("Stop Listening", systemImage: "stop.circle")
+                } else {
+                    Label("Start Listening", systemImage: "mic.circle")
+                }
+            }
+            .disabled(appState.status == .processing)
 
             // Actions
             Button {

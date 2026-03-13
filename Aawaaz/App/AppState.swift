@@ -57,6 +57,11 @@ final class AppState {
     // Model management
     var modelManager = ModelManager()
 
+    // Transcription pipeline
+    @ObservationIgnored
+    private(set) lazy var pipeline = TranscriptionPipeline(appState: self)
+    var pipelineError: String?
+
     // Audio device state
     var availableAudioDevices: [AudioDevice] = []
     var selectedAudioDeviceUID: String? // nil = system default
@@ -98,6 +103,25 @@ final class AppState {
         if let uid = selectedAudioDeviceUID,
            !availableAudioDevices.contains(where: { $0.uid == uid }) {
             selectedAudioDeviceUID = nil
+        }
+    }
+
+    /// Toggle the transcription pipeline on or off.
+    func toggleListening() {
+        if pipeline.isListening {
+            pipeline.stopListening()
+            status = .idle
+        } else {
+            pipelineError = nil
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                do {
+                    try await self.pipeline.startListening()
+                } catch {
+                    self.pipelineError = error.localizedDescription
+                    self.status = .idle
+                }
+            }
         }
     }
 }

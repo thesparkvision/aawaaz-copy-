@@ -181,10 +181,10 @@ aawaaz/
 
 #### Step 1.6: Transcription Pipeline
 
-- [ ] `TranscriptionPipeline.swift` — Wire: AudioCapture → VAD → Whisper → output
-- [ ] On speech end: send audio buffer to WhisperManager, receive text
-- [ ] Publish transcription result to AppState
-- [ ] Copy result to clipboard automatically (NSPasteboard)
+- [x] `TranscriptionPipeline.swift` — Wire: AudioCapture → VAD → Whisper → output
+- [x] On speech end: send audio buffer to WhisperManager, receive text
+- [x] Publish transcription result to AppState
+- [x] Copy result to clipboard automatically (NSPasteboard)
 - [ ] Benchmark end-to-end latency on representative short and medium utterances; if VAD-segmented final inference does not meet the UX bar, pull interim/streaming work forward instead of deferring it to a later polish phase
 
 #### Step 1.7: Overlay Window

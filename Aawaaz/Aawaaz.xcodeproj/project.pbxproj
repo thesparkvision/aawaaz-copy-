@@ -22,6 +22,7 @@
 		AA000016 /* ModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100016; };
 		AA000017 /* WhisperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017; };
 		AA000018 /* ModelDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018; };
+		AA000019 /* TranscriptionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019; };
 		AA000021 /* whisper in Frameworks */ = {isa = PBXBuildFile; productRef = AA900020; };
 /* End PBXBuildFile section */
 
@@ -44,6 +45,7 @@
 		AA100016 /* ModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalog.swift; sourceTree = "<group>"; };
 		AA100017 /* WhisperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperManager.swift; sourceTree = "<group>"; };
 		AA100018 /* ModelDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadView.swift; sourceTree = "<group>"; };
+		AA100019 /* TranscriptionPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionPipeline.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 			isa = PBXGroup;
 			children = (
 				AA100017 /* WhisperManager.swift */,
+				AA100019 /* TranscriptionPipeline.swift */,
 			);
 			path = Transcription;
 			sourceTree = "<group>";
@@ -246,6 +249,7 @@
 				AA000016 /* ModelCatalog.swift in Sources */,
 				AA000017 /* WhisperManager.swift in Sources */,
 				AA000018 /* ModelDownloadView.swift in Sources */,
+				AA000019 /* TranscriptionPipeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

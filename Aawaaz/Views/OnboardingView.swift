@@ -210,8 +210,6 @@ struct OnboardingView: View {
 
     private var modelStep: some View {
         VStack(spacing: 16) {
-            Spacer()
-
             Image(systemName: "arrow.down.circle")
                 .font(.system(size: 48))
                 .foregroundStyle(hasDownloadedModel ? .green : .blue)
@@ -234,13 +232,12 @@ struct OnboardingView: View {
                     .frame(maxWidth: 360)
             }
 
-            // Embedded model download list
-            ModelDownloadView()
-                .frame(maxHeight: 180)
-
-            Spacer()
+            ScrollView {
+                ModelDownloadView()
+            }
         }
         .padding(.horizontal, 20)
+        .padding(.top, 16)
     }
 
     // MARK: - Navigation

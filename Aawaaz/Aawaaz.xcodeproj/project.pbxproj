@@ -24,6 +24,13 @@
 		AA000018 /* ModelDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018; };
 		AA000019 /* TranscriptionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019; };
 		AA000021 /* whisper in Frameworks */ = {isa = PBXBuildFile; productRef = AA900020; };
+		AA000030 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030; };
+		AA000031 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031; };
+		AA000032 /* HotkeyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032; };
+		AA000033 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100033; };
+		AA000034 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100034; };
+		AA000035 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100035; };
+		AA000036 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100036; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +53,13 @@
 		AA100017 /* WhisperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperManager.swift; sourceTree = "<group>"; };
 		AA100018 /* ModelDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadView.swift; sourceTree = "<group>"; };
 		AA100019 /* TranscriptionPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionPipeline.swift; sourceTree = "<group>"; };
+		AA100030 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
+		AA100031 /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowController.swift; sourceTree = "<group>"; };
+		AA100032 /* HotkeyConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfiguration.swift; sourceTree = "<group>"; };
+		AA100033 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		AA100034 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
+		AA100035 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		AA100036 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +96,8 @@
 				AA300006 /* VAD */,
 				AA300007 /* Models */,
 				AA300008 /* Transcription */,
+				AA300009 /* Hotkey */,
+				AA300011 /* Permissions */,
 			);
 			name = Aawaaz;
 			sourceTree = "<group>";
@@ -91,6 +107,7 @@
 			children = (
 				AA100001 /* AawaazApp.swift */,
 				AA100002 /* AppState.swift */,
+				AA100036 /* AppDelegate.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -101,6 +118,9 @@
 				AA100003 /* MenuBarView.swift */,
 				AA100004 /* SettingsView.swift */,
 				AA100018 /* ModelDownloadView.swift */,
+				AA100030 /* OverlayView.swift */,
+				AA100031 /* OverlayWindowController.swift */,
+				AA100035 /* OnboardingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -149,6 +169,23 @@
 				AA100019 /* TranscriptionPipeline.swift */,
 			);
 			path = Transcription;
+			sourceTree = "<group>";
+		};
+		AA300009 /* Hotkey */ = {
+			isa = PBXGroup;
+			children = (
+				AA100032 /* HotkeyConfiguration.swift */,
+				AA100033 /* HotkeyManager.swift */,
+			);
+			path = Hotkey;
+			sourceTree = "<group>";
+		};
+		AA300011 /* Permissions */ = {
+			isa = PBXGroup;
+			children = (
+				AA100034 /* PermissionsManager.swift */,
+			);
+			path = Permissions;
 			sourceTree = "<group>";
 		};
 		AA300010 /* Products */ = {
@@ -250,6 +287,13 @@
 				AA000017 /* WhisperManager.swift in Sources */,
 				AA000018 /* ModelDownloadView.swift in Sources */,
 				AA000019 /* TranscriptionPipeline.swift in Sources */,
+				AA000030 /* OverlayView.swift in Sources */,
+				AA000031 /* OverlayWindowController.swift in Sources */,
+				AA000032 /* HotkeyConfiguration.swift in Sources */,
+				AA000033 /* HotkeyManager.swift in Sources */,
+				AA000034 /* PermissionsManager.swift in Sources */,
+				AA000035 /* OnboardingView.swift in Sources */,
+				AA000036 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

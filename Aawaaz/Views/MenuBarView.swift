@@ -37,6 +37,17 @@ struct MenuBarView: View {
             }
             .font(.subheadline)
 
+            // Hotkey
+            HStack {
+                Image(systemName: "keyboard")
+                    .foregroundStyle(.secondary)
+                Text("Shortcut:")
+                    .foregroundStyle(.secondary)
+                Text(appState.hotkeyConfig.displayString)
+                    .font(.system(.subheadline, design: .monospaced))
+            }
+            .font(.subheadline)
+
             // Last transcription preview
             if !appState.currentTranscription.isEmpty {
                 Divider()
@@ -53,6 +64,22 @@ struct MenuBarView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .lineLimit(2)
+            }
+
+            // Accessibility warning
+            if !PermissionsManager.isAccessibilityGranted {
+                Divider()
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Hotkey requires Input Monitoring", systemImage: "exclamationmark.shield")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Button("Grant Access") {
+                        PermissionsManager.promptAccessibility()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
             }
 
             Divider()

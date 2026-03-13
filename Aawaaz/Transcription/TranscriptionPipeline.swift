@@ -147,6 +147,7 @@ final class TranscriptionPipeline {
         guard let appState else { return }
 
         appState.status = .processing
+        appState.showOverlayProcessing()
 
         let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -166,6 +167,7 @@ final class TranscriptionPipeline {
 
             appState.currentTranscription = text
             copyToClipboard(text)
+            appState.showOverlayResult(text)
 
             let audioDuration = Double(samples.count) / 16_000.0
             print("[Pipeline] Transcribed \(String(format: "%.1f", audioDuration))s audio "

@@ -189,33 +189,33 @@ aawaaz/
 
 #### Step 1.7: Overlay Window
 
-- [ ] `OverlayWindowController.swift` — NSPanel, floating, always-on-top, non-activating
-- [ ] `OverlayView.swift` — SwiftUI view showing: recording indicator (when listening), transcription text (when processing/done)
-- [ ] Position: near mouse cursor or near focused window
-- [ ] Auto-dismiss after a few seconds, or on next hotkey press
-- [ ] Animate: fade in/out, subtle slide
+- [x] `OverlayWindowController.swift` — NSPanel, floating, always-on-top, non-activating
+- [x] `OverlayView.swift` — SwiftUI view showing: recording indicator (when listening), transcription text (when processing/done)
+- [x] Position: near mouse cursor or near focused window
+- [x] Auto-dismiss after a few seconds, or on next hotkey press
+- [x] Animate: fade in/out, subtle slide
 
 #### Step 1.8: Global Hotkey
 
-- [ ] Evaluate candidate hotkey mechanisms (`RegisterEventHotKey`, event taps, `NSEvent` monitors, or other native options) against system-wide reliability, modifier-only support, hold/release detection, permission behavior, and conflict rate
-- [ ] `HotkeyManager.swift` — Implement the most reliable validated option; do not assume `NSEvent` monitors are sufficient until tested
-- [ ] Choose the default shortcut only after testing conflict rate and ergonomics; do not assume a modifier-only shortcut (for example right Option) is viable across target apps
-- [ ] Hold mode: key down → start listening, key up → stop and process
-- [ ] Toggle mode: key down → toggle listening state
-- [ ] `HotkeyConfiguration.swift` — Persist chosen key + mode in UserDefaults
+- [x] Evaluate candidate hotkey mechanisms (`RegisterEventHotKey`, event taps, `NSEvent` monitors, or other native options) against system-wide reliability, modifier-only support, hold/release detection, permission behavior, and conflict rate
+- [x] `HotkeyManager.swift` — Implement the most reliable validated option; do not assume `NSEvent` monitors are sufficient until tested
+- [x] Choose the default shortcut only after testing conflict rate and ergonomics; do not assume a modifier-only shortcut (for example right Option) is viable across target apps
+- [x] Hold mode: key down → start listening, key up → stop and process
+- [x] Toggle mode: key down → toggle listening state
+- [x] `HotkeyConfiguration.swift` — Persist chosen key + mode in UserDefaults
 
 #### Step 1.9: Settings
 
-- [ ] `SettingsView.swift` — SwiftUI Settings scene
-- [ ] Tabs: General (hotkey, activation mode), Models (select/download), Audio (input device)
-- [ ] Language mode selector: Auto / English / Hindi
-- [ ] Latency preset: Fast (small model, short chunks) / Balanced (turbo) / Quality (large-v3)
+- [x] `SettingsView.swift` — SwiftUI Settings scene
+- [x] Tabs: General (hotkey, activation mode), Models (select/download), Audio (input device)
+- [x] Language mode selector: Auto / English / Hindi
+- [x] Latency preset: Fast (small model, short chunks) / Balanced (turbo) / Quality (large-v3)
 
 #### Step 1.10: First Launch & Permissions
 
-- [ ] `PermissionsManager.swift` — Check microphone permission status
-- [ ] `OnboardingView.swift` — Welcome screen, request microphone permission, guide to download first model
-- [ ] Show permission status indicators
+- [x] `PermissionsManager.swift` — Check microphone permission status
+- [x] `OnboardingView.swift` — Welcome screen, request microphone permission, guide to download first model
+- [x] Show permission status indicators
 
 **Phase 1 deliverable**: A working menu bar app that listens on hotkey, transcribes via Whisper, shows result in an overlay, and copies to clipboard. User pastes manually.
 

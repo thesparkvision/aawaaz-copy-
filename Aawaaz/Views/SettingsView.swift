@@ -4,8 +4,6 @@ struct SettingsView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        @Bindable var state = appState
-
         TabView {
             GeneralSettingsView()
                 .tabItem {
@@ -22,7 +20,7 @@ struct SettingsView: View {
                     Label("Audio", systemImage: "mic")
                 }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 500, height: 420)
     }
 }
 
@@ -33,10 +31,62 @@ struct GeneralSettingsView: View {
         @Bindable var state = appState
 
         Form {
-            Picker("Language", selection: $state.selectedLanguage) {
-                ForEach(LanguageMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+            // Hotkey section
+            Section("Activation") {
+                HStack {
+                    Text("Shortcut")
+                    Spacer()
+                    Text(appState.hotkeyConfig.displayString)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                        .font(.system(.body, design: .monospaced))
                 }
+
+                Picker("Mode", selection: Binding(
+                    get: { appState.hotkeyConfig.mode },
+                    set: { newMode in
+                        var config = appState.hotkeyConfig
+                        config.mode = newMode
+                        appState.updateHotkeyConfig(config)
+                    }
+                )) {
+                    ForEach(HotkeyMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+
+                Text(appState.hotkeyConfig.mode.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Language section
+            Section("Language") {
+                Picker("Language", selection: $state.selectedLanguage) {
+                    ForEach(LanguageMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+            }
+
+            // Latency section
+            Section("Latency") {
+                Picker("Preset", selection: $state.latencyPreset) {
+                    ForEach(LatencyPreset.allCases) { preset in
+                        Text(preset.rawValue).tag(preset)
+                    }
+                }
+                .onChange(of: appState.latencyPreset) { _, newPreset in
+                    let recommended = newPreset.recommendedModel
+                    if appState.modelManager.isDownloaded(recommended) {
+                        appState.selectedModel = recommended
+                    }
+                }
+
+                Text(appState.latencyPreset.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding()

@@ -9,6 +9,11 @@
             "key": "RUN_LLM_SPIKE",
             "value": "1",
             "enabled": false
+          },
+          {
+            "key": "RUN_QUALITY_TESTS",
+            "value": "1",
+            "enabled": false
           }
         ]
       }

@@ -66,6 +66,7 @@
 		AAT00010 /* LLMSpikeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10010 /* LLMSpikeTests.swift */; };
 		AAT00011 /* CleanupLevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10011 /* CleanupLevelTests.swift */; };
 		AAT00012 /* DevanagariTransliteratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10012 /* DevanagariTransliteratorTests.swift */; };
+		AAT00013 /* CleanupQualityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10013 /* CleanupQualityTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -127,6 +128,7 @@
 		AAT10010 /* LLMSpikeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeTests.swift; sourceTree = "<group>"; };
 		AAT10011 /* CleanupLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupLevelTests.swift; sourceTree = "<group>"; };
 		AAT10012 /* DevanagariTransliteratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevanagariTransliteratorTests.swift; sourceTree = "<group>"; };
+		AAT10013 /* CleanupQualityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupQualityTests.swift; sourceTree = "<group>"; };
 		AAT10100 /* AawaazTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AawaazTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -307,6 +309,7 @@
 				AAT10010 /* LLMSpikeTests.swift */,
 				AAT10011 /* CleanupLevelTests.swift */,
 				AAT10012 /* DevanagariTransliteratorTests.swift */,
+				AAT10013 /* CleanupQualityTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -519,6 +522,7 @@
 				AAT00010 /* LLMSpikeTests.swift in Sources */,
 				AAT00011 /* CleanupLevelTests.swift in Sources */,
 				AAT00012 /* DevanagariTransliteratorTests.swift in Sources */,
+				AAT00013 /* CleanupQualityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

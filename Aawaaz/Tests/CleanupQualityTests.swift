@@ -1155,7 +1155,8 @@ final class CleanupQualityTests: XCTestCase {
 
         let candidates: [CandidateModel] = [
             CandidateModel(name: "Qwen3-0.6B-6bit", huggingFaceID: "mlx-community/Qwen3-0.6B-6bit", sizeLabel: "~560MB"),
-            CandidateModel(name: "Qwen3-4B-3bit", huggingFaceID: "mlx-community/Qwen3-4B-3bit", sizeLabel: "~1.8GB"),
+            CandidateModel(name: "Qwen3.5-0.8B-4bit", huggingFaceID: "mlx-community/Qwen3.5-0.8B-4bit", sizeLabel: "~620MB"),
+            CandidateModel(name: "Qwen3-1.7B-4bit", huggingFaceID: "mlx-community/Qwen3-1.7B-4bit", sizeLabel: "~1.2GB"),
         ]
 
         let textProcessor = TextProcessor()

@@ -546,7 +546,7 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
 
 #### Step 3.5: LLM Prompt Engineering
 
-- [ ] System prompt template:
+- [x] System prompt template:
   ```
   Clean up this dictated text. The speaker was using [app_name] ([app_category]).
   - Fix grammar and punctuation
@@ -557,7 +557,7 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
   - Do not add information that wasn't spoken
   Output only the cleaned text, nothing else.
   ```
-- [ ] Cleanup level presets (Light / Medium / Full) adjust the prompt:
+- [x] Cleanup level presets (Light / Medium / Full) adjust the prompt:
   - Light: grammar and punctuation only
   - Medium: + sentence structure, capitalization
   - Full: + context-aware formatting, tone adjustment

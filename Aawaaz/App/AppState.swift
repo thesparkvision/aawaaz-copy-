@@ -113,6 +113,14 @@ final class AppState {
         didSet { textProcessingConfig.save() }
     }
 
+    // LLM post-processing
+    var postProcessingMode: PostProcessingMode = .load() {
+        didSet { postProcessingMode.save() }
+    }
+    var cleanupLevel: CleanupLevel = .load() {
+        didSet { cleanupLevel.save() }
+    }
+
     // Hotkey
     @ObservationIgnored
     let hotkeyManager = HotkeyManager()

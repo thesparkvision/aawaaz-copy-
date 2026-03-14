@@ -294,9 +294,12 @@ final class TranscriptionPipeline {
         appState.status = .processing
         appState.showOverlayProcessing()
 
-        // Run the post-processing chain (currently a pass-through; steps 3.1+
-        // will add filler word removal, self-correction detection, LLM cleanup, etc.)
-        let processedText = await postProcess(rawText)
+        // Snapshot the insertion context once for both post-processing and insertion.
+        // This avoids context drift if the user switches apps during LLM processing.
+        let insertionContext = InsertionContext.current() ?? .unknown
+
+        // Run the post-processing chain
+        let processedText = await postProcess(rawText, context: insertionContext)
 
         guard sessionID == session else { return }
 
@@ -359,19 +362,37 @@ final class TranscriptionPipeline {
     // MARK: - Private — Post-Processing
 
     private let textProcessor = TextProcessor()
+    private let llmProcessor = LocalLLMProcessor()
+    private let noOpProcessor = NoOpProcessor()
 
     /// Run the post-processing chain on accumulated text.
     ///
-    /// Current chain:
+    /// Chain:
     /// 1. Self-correction detection (Step 3.1)
     /// 2. Filler word removal (Step 3.1)
+    /// 3. LLM cleanup when ``PostProcessingMode`` is `.local` (Steps 3.3–3.5)
     ///
-    /// Future steps will add:
-    /// 3. Dictionary correction (Phase 3.5)
-    /// 4. Snippet expansion (Phase 3.5)
-    /// 5. LLM cleanup (Steps 3.3–3.5)
-    private func postProcess(_ text: String) async -> String {
+    /// If LLM processing fails, the pre-LLM result is used as fallback.
+    private func postProcess(_ text: String, context: InsertionContext) async -> String {
         let config = appState?.textProcessingConfig ?? .default
-        return textProcessor.process(text, config: config)
+        let mode = appState?.postProcessingMode ?? .off
+        let cleanupLevel = appState?.cleanupLevel ?? .medium
+
+        // Step 1-2: Deterministic text processing
+        let preLLMText = textProcessor.process(text, config: config)
+
+        // Step 3: LLM post-processing (if enabled)
+        let processor: PostProcessor = (mode == .local) ? llmProcessor : noOpProcessor
+
+        do {
+            return try await processor.process(
+                rawText: preLLMText,
+                context: context,
+                cleanupLevel: cleanupLevel
+            )
+        } catch {
+            print("[Pipeline] LLM post-processing failed, using pre-LLM text: \(error.localizedDescription)")
+            return preLLMText
+        }
     }
 }

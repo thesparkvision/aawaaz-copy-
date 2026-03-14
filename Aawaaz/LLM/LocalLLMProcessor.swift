@@ -56,12 +56,12 @@ actor LocalLLMProcessor: PostProcessor {
 
     // MARK: - PostProcessor
 
-    func process(rawText: String, context: InsertionContext) async throws -> String {
+    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel) async throws -> String {
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return rawText }
 
         let container = try await ensureModelLoaded()
-        let systemPrompt = Self.buildSystemPrompt(for: context)
+        let systemPrompt = Self.buildSystemPrompt(for: context, cleanupLevel: cleanupLevel)
 
         let session = ChatSession(
             container,
@@ -201,47 +201,92 @@ actor LocalLLMProcessor: PostProcessor {
 
     // MARK: - Prompt Construction
 
-    /// Build a system prompt tailored to the target app's category and field type.
+    /// Build a system prompt tailored to the cleanup level, target app category,
+    /// and field type.
     ///
-    /// The prompt instructs the model to clean up dictated speech while
-    /// respecting the tone appropriate for the context (formal for email,
-    /// casual for chat, verbatim for terminals, etc.) and field constraints
-    /// (single-line fields must not receive paragraph breaks).
-    static func buildSystemPrompt(for context: InsertionContext) -> String {
-        let categoryInstruction = categorySpecificInstruction(for: context.appCategory)
+    /// - ``CleanupLevel/light``: Grammar and punctuation fixes only. Preserves
+    ///   everything else as spoken. No category-specific tone adjustment.
+    /// - ``CleanupLevel/medium``: Adds sentence structure improvements,
+    ///   capitalization, and self-correction resolution.
+    /// - ``CleanupLevel/full``: Adds context-aware formatting (email → formal,
+    ///   chat → casual) and nuanced filler word removal.
+    ///
+    /// Field-type constraints (e.g., single-line fields must not receive
+    /// paragraph breaks) and Hindi/English code-switching preservation apply
+    /// at all levels.
+    static func buildSystemPrompt(
+        for context: InsertionContext,
+        cleanupLevel: CleanupLevel
+    ) -> String {
+        var instructions: [String] = []
         let fieldConstraint = fieldTypeConstraint(for: context.fieldType)
+
+        switch cleanupLevel {
+        case .light:
+            instructions = [
+                "1. Fix grammar and punctuation",
+                "2. Fix obvious typos",
+                "3. Keep everything else exactly as spoken — do NOT restructure sentences or change word choice",
+                "4. Do NOT remove any words (even fillers like \"um\", \"uh\")",
+                "5. Do NOT add, infer, or embellish content",
+                "6. If the text mixes Hindi and English, preserve as-is",
+            ]
+
+        case .medium:
+            instructions = [
+                "1. Fix grammar, punctuation, and capitalization",
+                "2. Improve sentence structure where clearly needed",
+                "3. If the speaker corrects themselves (e.g. \"actually no\", \"I mean\"), keep only the correction",
+                "4. Keep the speaker's intent and meaning exactly intact",
+                "5. Do NOT add, infer, or embellish content",
+                "6. If the text mixes Hindi and English, preserve the code-switching naturally",
+            ]
+
+        case .full:
+            let categoryInstruction = categorySpecificInstruction(for: context)
+            instructions = [
+                "1. Fix grammar, punctuation, and capitalization",
+                "2. Remove obvious filler words (e.g. um, uh, you know, basically) only when clearly disfluent",
+                "3. Improve sentence structure for clarity",
+                "4. If the speaker corrects themselves (e.g. \"actually no\", \"I mean\"), keep only the correction",
+                "5. Keep the speaker's intent and meaning exactly intact",
+                "6. Do NOT add, infer, or embellish content",
+                "7. If the text mixes Hindi and English, preserve the code-switching naturally",
+                categoryInstruction,
+            ]
+        }
+
+        if !fieldConstraint.isEmpty {
+            instructions.append(fieldConstraint)
+        }
+
+        let numberedInstructions = instructions.joined(separator: "\n")
 
         return """
             You are a text cleanup tool for dictated speech. Your ONLY job:
-            1. Fix grammar, punctuation, and capitalization
-            2. Remove filler words (um, uh, like, you know, basically)
-            3. Keep the speaker's intent and meaning exactly intact
-            4. Do NOT add, infer, or embellish content
-            5. If the text mixes Hindi and English, preserve the code-switching naturally
-            6. If the speaker corrects themselves ("actually no", "I mean"), keep only the correction
-            \(categoryInstruction)
-            \(fieldConstraint)
+            \(numberedInstructions)
 
             Output ONLY the cleaned text. No explanations, no tags, no commentary.
             """
     }
 
+    /// Category-specific formatting instruction for ``CleanupLevel/full``.
     private static func categorySpecificInstruction(
-        for category: InsertionContext.AppCategory
+        for context: InsertionContext
     ) -> String {
-        switch category {
+        switch context.appCategory {
         case .email:
-            return "7. Format for email: use professional tone, proper paragraphs"
+            return "8. Format for email: use professional tone, proper paragraphs"
         case .chat:
-            return "7. Format for chat: keep casual tone, minimal formatting"
+            return "8. Format for chat: keep casual tone, minimal formatting"
         case .code:
-            return "7. Format for code context: preserve code, symbols, filenames, APIs, and identifiers exactly; only clean surrounding prose"
+            return "8. Format for code editor: preserve code, symbols, filenames, APIs, and identifiers exactly; only clean surrounding prose"
         case .terminal:
-            return "7. Format for terminal: preserve commands, flags, paths, casing, and spacing exactly"
+            return "8. Format for terminal: preserve commands, flags, paths, casing, and spacing exactly"
         case .document:
-            return "7. Format for document: use structured prose, proper paragraphs"
+            return "8. Format for document: use structured prose, proper paragraphs"
         case .browser, .other:
-            return "7. Format naturally for general use"
+            return "8. Format naturally for general use"
         }
     }
 
@@ -250,7 +295,7 @@ actor LocalLLMProcessor: PostProcessor {
     ) -> String {
         switch fieldType {
         case .singleLine, .comboBox:
-            return "8. IMPORTANT: This is a single-line field — output must be one line only, no paragraph breaks or newlines"
+            return "IMPORTANT: This is a single-line field — output must be one line only, no paragraph breaks or newlines"
         case .multiLine, .webArea, .unknown:
             return ""
         }

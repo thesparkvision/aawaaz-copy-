@@ -46,6 +46,8 @@
 		AA000060 /* LLMSpikeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100060 /* LLMSpikeRunner.swift */; };
 		AA000061 /* LLMModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100061 /* LLMModelCatalog.swift */; };
 		AA000062 /* LocalLLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100062 /* LocalLLMProcessor.swift */; };
+		AA000063 /* CleanupLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100063 /* CleanupLevel.swift */; };
+		AA000064 /* PostProcessingMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100064 /* PostProcessingMode.swift */; };
 		AA000022 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900030 /* MLXLLM */; };
 		AA000023 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA900031 /* MLXLMCommon */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
@@ -58,6 +60,7 @@
 		AAT00008 /* SelfCorrectionDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10008 /* SelfCorrectionDetectorTests.swift */; };
 		AAT00009 /* TextProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10009 /* TextProcessorTests.swift */; };
 		AAT00010 /* LLMSpikeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10010 /* LLMSpikeTests.swift */; };
+		AAT00011 /* CleanupLevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10011 /* CleanupLevelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -102,6 +105,8 @@
 		AA100060 /* LLMSpikeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeRunner.swift; sourceTree = "<group>"; };
 		AA100061 /* LLMModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMModelCatalog.swift; sourceTree = "<group>"; };
 		AA100062 /* LocalLLMProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMProcessor.swift; sourceTree = "<group>"; };
+		AA100063 /* CleanupLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupLevel.swift; sourceTree = "<group>"; };
+		AA100064 /* PostProcessingMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessingMode.swift; sourceTree = "<group>"; };
 		AAT10001 /* VADStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADStateTests.swift; sourceTree = "<group>"; };
 		AAT10002 /* HotkeyConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfigurationTests.swift; sourceTree = "<group>"; };
 		AAT10003 /* HotkeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManagerTests.swift; sourceTree = "<group>"; };
@@ -112,6 +117,7 @@
 		AAT10008 /* SelfCorrectionDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfCorrectionDetectorTests.swift; sourceTree = "<group>"; };
 		AAT10009 /* TextProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessorTests.swift; sourceTree = "<group>"; };
 		AAT10010 /* LLMSpikeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeTests.swift; sourceTree = "<group>"; };
+		AAT10011 /* CleanupLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupLevelTests.swift; sourceTree = "<group>"; };
 		AAT10100 /* AawaazTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AawaazTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -288,6 +294,7 @@
 				AAT10008 /* SelfCorrectionDetectorTests.swift */,
 				AAT10009 /* TextProcessorTests.swift */,
 				AAT10010 /* LLMSpikeTests.swift */,
+				AAT10011 /* CleanupLevelTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -308,9 +315,11 @@
 		AA300015 /* LLM */ = {
 			isa = PBXGroup;
 			children = (
+				AA100063 /* CleanupLevel.swift */,
 				AA100061 /* LLMModelCatalog.swift */,
 				AA100062 /* LocalLLMProcessor.swift */,
 				AA100060 /* LLMSpikeRunner.swift */,
+				AA100064 /* PostProcessingMode.swift */,
 			);
 			path = LLM;
 			sourceTree = "<group>";
@@ -471,6 +480,8 @@
 				AA000060 /* LLMSpikeRunner.swift in Sources */,
 				AA000061 /* LLMModelCatalog.swift in Sources */,
 				AA000062 /* LocalLLMProcessor.swift in Sources */,
+				AA000063 /* CleanupLevel.swift in Sources */,
+				AA000064 /* PostProcessingMode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -488,6 +499,7 @@
 				AAT00008 /* SelfCorrectionDetectorTests.swift in Sources */,
 				AAT00009 /* TextProcessorTests.swift in Sources */,
 				AAT00010 /* LLMSpikeTests.swift in Sources */,
+				AAT00011 /* CleanupLevelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

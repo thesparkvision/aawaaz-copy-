@@ -7,7 +7,7 @@ import Foundation
 /// downloaded, API key not set).
 struct NoOpProcessor: PostProcessor {
 
-    func process(rawText: String, context: InsertionContext) async throws -> String {
+    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel) async throws -> String {
         rawText
     }
 }

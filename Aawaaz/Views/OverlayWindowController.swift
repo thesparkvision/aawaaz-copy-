@@ -8,6 +8,8 @@ import SwiftUI
 /// - Position near the mouse cursor when shown
 /// - Auto-dismiss after a configurable delay for transcription results
 /// - Fade in and out with animation
+///
+/// All public methods must be called on the main thread.
 final class OverlayWindowController {
 
     // MARK: - Configuration
@@ -20,34 +22,41 @@ final class OverlayWindowController {
     private var panel: NSPanel?
     private var hostingView: NSHostingView<OverlayView>?
     private var dismissWorkItem: DispatchWorkItem?
-    private var currentStatus: TranscriptionStatus = .idle
-    private var currentTranscription: String = ""
+    let overlayState = OverlayState()
 
     // MARK: - Public API
 
     /// Show the overlay with a listening indicator near the mouse cursor.
     func showListening() {
         cancelAutoDismiss()
-        currentStatus = .listening
-        currentTranscription = ""
+        overlayState.status = .listening
+        overlayState.transcription = ""
+        overlayState.amplitude = 0
         showPanel()
     }
 
     /// Update the overlay to show a processing indicator.
     func showProcessing() {
         cancelAutoDismiss()
-        currentStatus = .processing
-        currentTranscription = ""
+        overlayState.status = .processing
+        overlayState.amplitude = 0
         showPanel()
     }
 
     /// Show the transcription result, then auto-dismiss after a delay.
     func showResult(_ text: String) {
         cancelAutoDismiss()
-        currentStatus = .idle
-        currentTranscription = text
+        overlayState.status = .idle
+        overlayState.transcription = text
+        overlayState.amplitude = 0
         showPanel()
         scheduleAutoDismiss()
+    }
+
+    /// Update the current audio amplitude (0–1). Only takes effect while listening.
+    func updateAmplitude(_ amplitude: Float) {
+        guard overlayState.status == .listening else { return }
+        overlayState.amplitude = amplitude
     }
 
     /// Dismiss the overlay immediately.
@@ -77,23 +86,29 @@ final class OverlayWindowController {
         if panel == nil {
             createPanel()
         }
-        updateContent()
-        positionNearMouse()
 
-        panel?.alphaValue = 0
-        panel?.orderFrontRegardless()
+        if panel?.isVisible != true {
+            // First show — position, fade in
+            resizeToFit()
+            positionNearMouse()
+            panel?.alphaValue = 0
+            panel?.orderFrontRegardless()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                self.panel?.animator().alphaValue = 1
+            }
+        } else {
+            panel?.orderFrontRegardless()
+        }
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
-            self.panel?.animator().alphaValue = 1
+        // Defer a resize pass so SwiftUI's reactive layout is reflected.
+        DispatchQueue.main.async { [weak self] in
+            self?.resizeToFit()
         }
     }
 
     private func createPanel() {
-        let overlayView = OverlayView(
-            status: currentStatus,
-            transcription: currentTranscription
-        )
+        let overlayView = OverlayView(state: overlayState)
         let hosting = NSHostingView(rootView: overlayView)
         hosting.translatesAutoresizingMaskIntoConstraints = false
 
@@ -125,14 +140,7 @@ final class OverlayWindowController {
         self.hostingView = hosting
     }
 
-    private func updateContent() {
-        let overlayView = OverlayView(
-            status: currentStatus,
-            transcription: currentTranscription
-        )
-        hostingView?.rootView = overlayView
-
-        // Re-fit the panel to the new content size
+    private func resizeToFit() {
         if let hosting = hostingView {
             let fittingSize = hosting.fittingSize
             let newSize = NSSize(

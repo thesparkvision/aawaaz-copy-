@@ -119,6 +119,14 @@ final class TranscriptionPipeline {
             }
         }
 
+        // Wire: audio amplitude → overlay (throttled to main thread)
+        audioCapture.onAmplitude = { [weak self] amplitude in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.appState?.overlayController.updateAmplitude(amplitude)
+            }
+        }
+
         // Start audio capture with the user's selected device
         let deviceUID = appState?.selectedAudioDeviceUID
         try audioCapture.startCapture(deviceUID: deviceUID)
@@ -137,6 +145,7 @@ final class TranscriptionPipeline {
 
         audioCapture.stopCapture()
         audioCapture.onSamplesReceived = nil
+        audioCapture.onAmplitude = nil
 
         // Capture current VAD objects so the flush operates on the correct
         // instances even if startListening() is called again immediately.

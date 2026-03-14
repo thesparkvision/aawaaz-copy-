@@ -386,19 +386,19 @@ aawaaz/
 
 #### Step 2.5.2: Listening & Processing Indicator Overhaul
 
-- [ ] Replace the current simple overlay indicator with a richer **voice bubble / waveform** visualization:
-  - [ ] **Listening state**: Show an animated waveform or speech bubble that reacts to audio input amplitude in real-time
-    - [ ] Feed RMS amplitude from `AudioCaptureManager` to the overlay (add a lightweight amplitude callback alongside the sample callback)
-    - [ ] SwiftUI animation: 3-5 vertical bars that scale with amplitude (like a mini equalizer), or a pulsing circular waveform ring
-    - [ ] The animation should feel organic and responsive — the user should see movement as they speak
-  - [ ] **Processing state**: Morph the waveform into a subtle processing animation (e.g., the bars compress into a rotating ring, or the bubble shows a shimmer/thinking pattern)
-  - [ ] **Result state**: Smooth transition to showing the transcribed text
-- [ ] Design options to explore (implementer should prototype 2-3 and pick the best feel):
-  - [ ] Option A: **Floating pill** — small rounded capsule near cursor with animated bars inside
+- [x] Replace the current simple overlay indicator with a richer **voice bubble / waveform** visualization:
+  - [x] **Listening state**: Show an animated waveform or speech bubble that reacts to audio input amplitude in real-time
+    - [x] Feed RMS amplitude from `AudioCaptureManager` to the overlay (add a lightweight amplitude callback alongside the sample callback)
+    - [x] SwiftUI animation: 3-5 vertical bars that scale with amplitude (like a mini equalizer), or a pulsing circular waveform ring
+    - [x] The animation should feel organic and responsive — the user should see movement as they speak
+  - [x] **Processing state**: Morph the waveform into a subtle processing animation (e.g., the bars compress into a rotating ring, or the bubble shows a shimmer/thinking pattern)
+  - [x] **Result state**: Smooth transition to showing the transcribed text
+- [x] Design options to explore (implementer should prototype 2-3 and pick the best feel):
+  - [x] Option A: **Floating pill** — small rounded capsule near cursor with animated bars inside *(selected)*
   - [ ] Option B: **Voice bubble** — speech-bubble shape with waveform inside, tail pointing at the cursor/text field
   - [ ] Option C: **Minimal ring** — circular indicator near menu bar icon that pulses with speech amplitude
-- [ ] Update `OverlayView.swift` and `OverlayWindowController.swift` with the new visualization
-- [ ] Keep the overlay small and unobtrusive — it should not cover the text field being dictated into
+- [x] Update `OverlayView.swift` and `OverlayWindowController.swift` with the new visualization
+- [x] Keep the overlay small and unobtrusive — it should not cover the text field being dictated into
 
 #### Step 2.5.3: Fix Hindi-to-English Translation in Hinglish Mode
 

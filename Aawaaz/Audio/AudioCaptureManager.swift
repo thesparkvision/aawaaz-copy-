@@ -28,6 +28,8 @@ enum AudioCaptureError: Error, LocalizedError {
 final class AudioCaptureManager {
     static let targetSampleRate: Double = 16_000
     static let targetChannelCount: AVAudioChannelCount = 1
+    /// Reference RMS for normalising amplitude to 0–1. Typical speech is ~0.01–0.15.
+    private static let amplitudeReferenceRMS: Float = 0.15
 
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
@@ -36,6 +38,9 @@ final class AudioCaptureManager {
 
     /// Called on the audio thread with 16kHz mono Float32 samples.
     var onSamplesReceived: (([Float]) -> Void)?
+
+    /// Called on the audio thread with the RMS amplitude (0.0–1.0) of each delivered buffer.
+    var onAmplitude: ((Float) -> Void)?
 
     // MARK: - Permissions
 
@@ -185,5 +190,16 @@ final class AudioCaptureManager {
         ))
 
         onSamplesReceived?(samples)
+
+        // Compute RMS amplitude and normalize to 0–1 range.
+        if onAmplitude != nil {
+            var sumSquares: Float = 0
+            for sample in samples {
+                sumSquares += sample * sample
+            }
+            let rms = sqrt(sumSquares / Float(samples.count))
+            let normalized = max(0, min(rms / Self.amplitudeReferenceRMS, 1))
+            onAmplitude?(normalized)
+        }
     }
 }

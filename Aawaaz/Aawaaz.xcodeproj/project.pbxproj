@@ -36,6 +36,7 @@
 		AA000042 /* TextInsertionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* TextInsertionManager.swift */; };
 		AA000043 /* InsertionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100043 /* InsertionContext.swift */; };
 		AA000044 /* ShortcutRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100044 /* ShortcutRecorderView.swift */; };
+		AA000045 /* OverlayState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100045 /* OverlayState.swift */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
 		AAT00002 /* HotkeyConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10002 /* HotkeyConfigurationTests.swift */; };
 		AAT00003 /* HotkeyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10003 /* HotkeyManagerTests.swift */; };
@@ -76,6 +77,7 @@
 		AA100042 /* TextInsertionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionManager.swift; sourceTree = "<group>"; };
 		AA100043 /* InsertionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsertionContext.swift; sourceTree = "<group>"; };
 		AA100044 /* ShortcutRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutRecorderView.swift; sourceTree = "<group>"; };
+		AA100045 /* OverlayState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayState.swift; sourceTree = "<group>"; };
 		AAT10001 /* VADStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADStateTests.swift; sourceTree = "<group>"; };
 		AAT10002 /* HotkeyConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfigurationTests.swift; sourceTree = "<group>"; };
 		AAT10003 /* HotkeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManagerTests.swift; sourceTree = "<group>"; };
@@ -152,6 +154,7 @@
 				AA100018 /* ModelDownloadView.swift */,
 				AA100030 /* OverlayView.swift */,
 				AA100031 /* OverlayWindowController.swift */,
+				AA100045 /* OverlayState.swift */,
 				AA100035 /* OnboardingView.swift */,
 				AA100044 /* ShortcutRecorderView.swift */,
 			);
@@ -396,6 +399,7 @@
 				AA000042 /* TextInsertionManager.swift in Sources */,
 				AA000043 /* InsertionContext.swift in Sources */,
 				AA000044 /* ShortcutRecorderView.swift in Sources */,
+				AA000045 /* OverlayState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -59,6 +59,21 @@ final class OverlayWindowController {
         overlayState.amplitude = amplitude
     }
 
+    /// Update the interim transcription text while still listening.
+    ///
+    /// Shows accumulated Whisper output in the overlay so the user sees their
+    /// speech being captured in real time. The waveform continues animating.
+    func updateInterimText(_ text: String) {
+        guard overlayState.status == .listening || overlayState.status == .processing else { return }
+        overlayState.status = .listening
+        overlayState.transcription = text
+        showPanel()
+        // Defer resize so SwiftUI layout reflects the new text
+        DispatchQueue.main.async { [weak self] in
+            self?.resizeToFit()
+        }
+    }
+
     /// Dismiss the overlay immediately.
     func dismiss() {
         cancelAutoDismiss()

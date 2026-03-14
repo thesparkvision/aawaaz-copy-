@@ -238,7 +238,7 @@ final class AppState {
 
     /// Start the transcription pipeline and show the overlay.
     func startListening() {
-        guard !pipeline.isListening else { return }
+        guard !pipeline.isBusy else { return }
         pipelineError = nil
         overlayController.showListening()
 
@@ -255,21 +255,15 @@ final class AppState {
         }
     }
 
-    /// Stop the transcription pipeline and let the overlay be managed by the pipeline.
+    /// Stop the transcription pipeline and let it finalize (post-process + insert).
+    ///
+    /// The pipeline handles the full lifecycle after stop:
+    /// listening → processing (post-processing) → result → auto-dismiss.
+    /// If nothing was transcribed, the pipeline dismisses the overlay directly.
     func stopListening() {
         guard pipeline.isListening else { return }
         pipeline.stopListening()
         hotkeyManager.resetState()
-        // Don't dismiss the overlay here — the VAD flush may trigger a final
-        // transcription that will show processing → result → auto-dismiss.
-        // Schedule a fallback dismiss in case VAD flush produces nothing.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self else { return }
-            self.status = .idle
-            if self.overlayController.isVisible {
-                self.overlayController.dismiss()
-            }
-        }
     }
 
     /// Toggle the transcription pipeline on or off.
@@ -286,6 +280,11 @@ final class AppState {
     /// Show the processing indicator in the overlay.
     func showOverlayProcessing() {
         overlayController.showProcessing()
+    }
+
+    /// Show interim transcription text in the overlay while still listening.
+    func showOverlayInterimText(_ text: String) {
+        overlayController.updateInterimText(text)
     }
 
     /// Show the transcription result in the overlay, then auto-dismiss.

@@ -441,20 +441,20 @@ aawaaz/
 
 > **Key design change**: Today the pipeline transcribes and inserts text in real-time as speech segments complete. With post-processing (text cleanup, LLM, dictionary correction, snippets), **insertion must be deferred until all processing stages have run**. The user should never see unprocessed text inserted and then corrected in-place — that would feel janky and cause editing conflicts.
 
-- [ ] Rearchitect `TranscriptionPipeline` to separate transcription from insertion:
-  - [ ] **During hold**: Continue transcribing speech segments via VAD → Whisper as today, accumulating raw text in memory. Show interim results in the overlay (raw transcription) so the user gets feedback that their speech is being captured.
-  - [ ] **On release (or toggle-off)**: Run the full post-processing chain on the accumulated text, then insert the final cleaned result.
-  - [ ] Post-processing chain order: Raw Whisper text → Dictionary correction → Filler word removal → Self-correction detection → Snippet expansion → LLM cleanup (if enabled) → Insert into app
-- [ ] Explore optimistic/pipelined approaches for lower latency:
-  - [ ] **Approach A — Process at end**: Simplest. Accumulate all raw segments, run full chain on release. Latency = processing time after release. Good baseline.
+- [x] Rearchitect `TranscriptionPipeline` to separate transcription from insertion:
+  - [x] **During hold**: Continue transcribing speech segments via VAD → Whisper as today, accumulating raw text in memory. Show interim results in the overlay (raw transcription) so the user gets feedback that their speech is being captured.
+  - [x] **On release (or toggle-off)**: Run the full post-processing chain on the accumulated text, then insert the final cleaned result.
+  - [x] Post-processing chain order: Raw Whisper text → Dictionary correction → Filler word removal → Self-correction detection → Snippet expansion → LLM cleanup (if enabled) → Insert into app
+- [x] Explore optimistic/pipelined approaches for lower latency:
+  - [x] **Approach A — Process at end**: Simplest. Accumulate all raw segments, run full chain on release. Latency = processing time after release. Good baseline.
   - [ ] **Approach B — Incremental processing**: Run lightweight stages (filler removal, dictionary correction) on each segment as it completes. Defer only LLM to the end. Reduces perceived latency since LLM only needs to process pre-cleaned text.
   - [ ] **Approach C — Speculative LLM**: Start LLM processing on accumulated text periodically (e.g., every 5s of speech). On release, only re-process the delta. More complex but lowest latency for long dictation.
-  - [ ] **Recommendation**: Start with Approach A for correctness, benchmark, then move to B if latency is noticeable. C is only needed for very long dictation sessions.
-- [ ] Update overlay behavior:
-  - [ ] While speaking (hold): show raw interim transcription with waveform/bubble indicator
-  - [ ] On release: briefly show "Processing..." while post-processing runs
-  - [ ] After processing: show final text and insert it
-- [ ] The implementer should explore and benchmark these approaches to find the best UX trade-off. The guiding principle is: **the user's focused text field should only ever receive the fully-processed final text, never intermediate results**.
+  - [x] **Recommendation**: Start with Approach A for correctness, benchmark, then move to B if latency is noticeable. C is only needed for very long dictation sessions.
+- [x] Update overlay behavior:
+  - [x] While speaking (hold): show raw interim transcription with waveform/bubble indicator
+  - [x] On release: briefly show "Processing..." while post-processing runs
+  - [x] After processing: show final text and insert it
+- [x] The implementer should explore and benchmark these approaches to find the best UX trade-off. The guiding principle is: **the user's focused text field should only ever receive the fully-processed final text, never intermediate results**.
 
 #### Step 3.1: Pre-LLM Text Processing Pipeline
 

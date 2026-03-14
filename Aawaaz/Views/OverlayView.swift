@@ -36,12 +36,21 @@ struct OverlayView: View {
     // MARK: - Subviews
 
     private var listeningIndicator: some View {
-        HStack(spacing: 10) {
-            AudioWaveformView(amplitude: state.amplitude)
-                .frame(width: 28, height: 20)
-            Text("Listening…")
-                .font(.system(.body, design: .rounded, weight: .medium))
-                .foregroundStyle(.primary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                AudioWaveformView(amplitude: state.amplitude)
+                    .frame(width: 28, height: 20)
+                Text("Listening…")
+                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .foregroundStyle(.primary)
+            }
+            if !state.transcription.isEmpty {
+                Text(state.transcription)
+                    .font(.system(.callout, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
@@ -63,7 +72,7 @@ struct OverlayView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.caption)
-                Text("Copied to clipboard")
+                Text("Inserted")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

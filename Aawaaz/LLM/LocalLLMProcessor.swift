@@ -44,8 +44,6 @@ actor LocalLLMProcessor: PostProcessor {
     private var activeLoadTask: Task<ModelContainer, Error>?
     /// Tracks which model ID the active load is for, to discard stale progress.
     private var activeLoadModelID: String?
-    private let selfCorrectionDetector = SelfCorrectionDetector()
-
     /// The model to use for inference.
     private(set) var selectedModel: LLMModel
 
@@ -76,11 +74,6 @@ actor LocalLLMProcessor: PostProcessor {
 
         // Guard against model returning empty or gibberish
         guard !cleaned.isEmpty else { return rawText }
-
-        if Self.shouldPreferDeterministicCorrectionFallback(input: trimmed, output: cleaned) {
-            let fallback = selfCorrectionDetector.detectAndResolve(trimmed)
-            return fallback.isEmpty ? rawText : fallback
-        }
 
         return cleaned
     }
@@ -371,59 +364,6 @@ actor LocalLLMProcessor: PostProcessor {
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    static func shouldPreferDeterministicCorrectionFallback(input: String, output: String) -> Bool {
-        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard containsCorrectionMarker(trimmedInput), !trimmedOutput.isEmpty else {
-            return false
-        }
-
-        let inputWords = words(in: trimmedInput)
-        let outputWords = words(in: trimmedOutput)
-
-        guard inputWords.count >= 4, !outputWords.isEmpty else {
-            return false
-        }
-
-        if outputWords.count == 1 {
-            return true
-        }
-
-        if outputWords.count <= 4,
-           let first = outputWords.first,
-           fragmentLeadTokens.contains(first) {
-            return true
-        }
-
-        return false
-    }
-
-    private static func containsCorrectionMarker(_ text: String) -> Bool {
-        SelfCorrectionDetector.defaultMarkers.contains { marker in
-            text.range(of: marker.phrase, options: .caseInsensitive) != nil
-        }
-    }
-
-    private static func words(in text: String) -> [String] {
-        guard !text.isEmpty,
-              let regex = try? NSRegularExpression(pattern: "\\b[\\p{L}\\p{N}']+\\b") else {
-            return []
-        }
-
-        let nsText = text as NSString
-        let range = NSRange(location: 0, length: nsText.length)
-        return regex.matches(in: text, range: range).map {
-            nsText.substring(with: $0.range).lowercased()
-        }
-    }
-
-    private static let fragmentLeadTokens: Set<String> = [
-        "to", "for", "with", "at", "in", "on", "from", "into", "onto", "about",
-        "of", "the", "a", "an", "this", "that", "these", "those",
-        "my", "your", "his", "her", "our", "their", "its",
-        "next", "last",
-    ]
 }
 
 // MARK: - Errors

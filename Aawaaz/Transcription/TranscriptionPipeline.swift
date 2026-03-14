@@ -406,22 +406,11 @@ final class TranscriptionPipeline {
 
         // Step 1-2: Deterministic text processing
         //
-        // When the LLM is active at medium/full cleanup, keep self-correction
-        // markers in the text so the model can rewrite the full utterance with
-        // intact context. This avoids the deterministic detector collapsing a
-        // partial repair ("... scratch that, to John") into a suffix fragment
-        // before the LLM ever sees the stable prefix.
-        let deterministicConfig: TextProcessingConfig
-        if llmAvailable && cleanupLevel != .light {
-            deterministicConfig = TextProcessingConfig(
-                fillerRemovalEnabled: config.fillerRemovalEnabled,
-                selfCorrectionEnabled: false,
-                fillerWords: config.fillerWords
-            )
-        } else {
-            deterministicConfig = config
-        }
-        let preLLMText = textProcessor.process(text, config: deterministicConfig)
+        // Always run deterministic self-correction before LLM cleanup.
+        // The deterministic detector reliably handles explicit markers
+        // (e.g. "scratch that", "actually no"). The LLM then cleans up
+        // whatever the detector outputs — no duplication, no confusion.
+        let preLLMText = textProcessor.process(text, config: config)
 
         // Step 3: LLM post-processing (if enabled AND model is downloaded)
         let processor: PostProcessor = llmAvailable ? llmProcessor : noOpProcessor

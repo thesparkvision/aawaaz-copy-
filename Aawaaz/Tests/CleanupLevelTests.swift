@@ -283,23 +283,4 @@ final class CleanupLevelTests: XCTestCase {
         }
     }
 
-    // MARK: - LLM Output Guard
-
-    func testCorrectionFallbackDetectsFragmentCollapse() {
-        XCTAssertTrue(
-            LocalLLMProcessor.shouldPreferDeterministicCorrectionFallback(
-                input: "can you send it to mark, oh scratch that, to john",
-                output: "to john"
-            )
-        )
-    }
-
-    func testCorrectionFallbackAllowsCompleteRewrite() {
-        XCTAssertFalse(
-            LocalLLMProcessor.shouldPreferDeterministicCorrectionFallback(
-                input: "go left, actually no, go right",
-                output: "go right"
-            )
-        )
-    }
 }

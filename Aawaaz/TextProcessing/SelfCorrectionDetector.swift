@@ -23,9 +23,15 @@ struct SelfCorrectionDetector {
     /// Correction markers, ordered longest-first so multi-word markers
     /// are matched before their substrings.
     static let defaultMarkers: [Marker] = [
+        Marker(phrase: "let me start over", requiresLeadingPunctuation: false),
         Marker(phrase: "let me rephrase", requiresLeadingPunctuation: false),
         Marker(phrase: "scratch that", requiresLeadingPunctuation: false),
         Marker(phrase: "actually no", requiresLeadingPunctuation: false),
+        Marker(phrase: "never mind", requiresLeadingPunctuation: false),
+        Marker(phrase: "nevermind", requiresLeadingPunctuation: false),
+        Marker(phrase: "forget that", requiresLeadingPunctuation: false),
+        Marker(phrase: "forget it", requiresLeadingPunctuation: false),
+        Marker(phrase: "start over", requiresLeadingPunctuation: false),
         Marker(phrase: "no no no", requiresLeadingPunctuation: false),
         Marker(phrase: "no no", requiresLeadingPunctuation: false),
         Marker(phrase: "I mean", requiresLeadingPunctuation: true),
@@ -35,18 +41,26 @@ struct SelfCorrectionDetector {
 
     /// Detect and resolve self-corrections in the input text.
     ///
-    /// For each sentence (split on `.!?`), scans left-to-right for correction
-    /// markers. When found, discards everything before the marker and keeps the
-    /// text after it. Multiple corrections in a single sentence are resolved
-    /// by keeping only the text after the **last** marker.
+    /// Two-phase approach:
+    /// 1. **Full-text scope**: Markers like "scratch that" and "actually no"
+    ///    discard everything before them, spanning sentence boundaries. This
+    ///    handles cases where Whisper punctuates across the correction
+    ///    (e.g. "Hey Mark. Scratch that. Hey John." → "Hey John.").
+    /// 2. **Per-sentence scope**: Context-dependent markers ("sorry", "wait",
+    ///    "I mean") correct within their sentence only.
     ///
     /// - Parameter text: The transcription text to process.
     /// - Returns: Text with self-corrections resolved.
     func detectAndResolve(_ text: String) -> String {
         guard !text.isEmpty else { return text }
 
-        // Split into sentences, process each independently, rejoin.
-        let sentences = splitIntoSentences(text)
+        // Phase 1: Full-text scope — markers without leading-punctuation
+        // requirement discard everything before them, spanning sentences.
+        let afterFullText = resolveFullTextMarkers(text)
+
+        // Phase 2: Per-sentence scope — context-dependent markers correct
+        // within their sentence.
+        let sentences = splitIntoSentences(afterFullText)
         let processed = sentences.map { resolveSentence($0) }
         let result = processed.joined(separator: " ")
 
@@ -54,6 +68,69 @@ struct SelfCorrectionDetector {
     }
 
     // MARK: - Private
+
+    /// Resolve correction markers that span sentence boundaries.
+    ///
+    /// Markers without a leading-punctuation requirement (e.g. "scratch that",
+    /// "actually no") indicate the speaker wants to discard everything said so
+    /// far. This method scans the **full** text and, when such a marker is
+    /// found, discards all content before (and including) the marker.
+    ///
+    /// Example: "Hey Mark. Oh sorry, scratch that. Hey John." → "Hey John."
+    private func resolveFullTextMarkers(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        var lastMarkerEnd: String.Index?
+
+        let fullTextMarkers = Self.defaultMarkers.filter { !$0.requiresLeadingPunctuation }
+
+        for marker in fullTextMarkers {
+            var searchStart = trimmed.startIndex
+            while let range = trimmed.range(of: marker.phrase,
+                                            options: .caseInsensitive,
+                                            range: searchStart..<trimmed.endIndex) {
+                let isBoundaryBefore = range.lowerBound == trimmed.startIndex
+                    || !trimmed[trimmed.index(before: range.lowerBound)].isLetter
+                let isBoundaryAfter = range.upperBound == trimmed.endIndex
+                    || !trimmed[range.upperBound].isLetter
+
+                if isBoundaryBefore && isBoundaryAfter {
+                    // Skip past trailing punctuation and whitespace so we land
+                    // at the start of the next meaningful content.
+                    var afterMarker = range.upperBound
+                    while afterMarker < trimmed.endIndex {
+                        let ch = trimmed[afterMarker]
+                        if ".,;:!?".contains(ch) || ch.isWhitespace {
+                            afterMarker = trimmed.index(after: afterMarker)
+                        } else {
+                            break
+                        }
+                    }
+
+                    if lastMarkerEnd == nil || afterMarker > lastMarkerEnd! {
+                        lastMarkerEnd = afterMarker
+                    }
+                }
+
+                searchStart = range.upperBound
+            }
+        }
+
+        guard let markerEnd = lastMarkerEnd, markerEnd < trimmed.endIndex else {
+            return text
+        }
+
+        let corrected = String(trimmed[markerEnd...])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !corrected.isEmpty else { return text }
+
+        // Capitalize the first character if the original started with uppercase
+        if trimmed.first?.isUppercase == true, let first = corrected.first, first.isLowercase {
+            return first.uppercased() + corrected.dropFirst()
+        }
+
+        return corrected
+    }
 
     /// Split text into sentence-like chunks on `.!?` boundaries, preserving
     /// the delimiter with the preceding chunk.

@@ -148,6 +148,64 @@ final class SelfCorrectionDetectorTests: XCTestCase {
         )
     }
 
+    // MARK: - Cross-Sentence Corrections
+
+    func testScratchThatAcrossSentences() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Hey Mark. Scratch that. Hey John."),
+            "Hey John."
+        )
+    }
+
+    func testScratchThatWithSorryAcrossSentences() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Hey Mark. Oh sorry, scratch that. Hey John."),
+            "Hey John."
+        )
+    }
+
+    func testActuallyNoAcrossSentences() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Send it to Mark. Actually no, send it to John."),
+            "Send it to John."
+        )
+    }
+
+    func testNeverMindCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Book the flight. Never mind, cancel everything."),
+            "Cancel everything."
+        )
+    }
+
+    func testNevermindCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Book the flight. Nevermind, cancel everything."),
+            "Cancel everything."
+        )
+    }
+
+    func testForgetThatCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Add that to the list. Forget that, remove it instead."),
+            "Remove it instead."
+        )
+    }
+
+    func testStartOverCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Dear sir, I am writing to. Start over. Hi team, quick update."),
+            "Hi team, quick update."
+        )
+    }
+
+    func testLetMeStartOverCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("The report shows. Let me start over. Sales grew 10%."),
+            "Sales grew 10%."
+        )
+    }
+
     // MARK: - Whitespace Handling
 
     func testTrimsWhitespace() {

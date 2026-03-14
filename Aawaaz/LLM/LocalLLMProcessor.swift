@@ -237,7 +237,7 @@ actor LocalLLMProcessor: PostProcessor {
             instructions = [
                 "1. Fix grammar, punctuation, and capitalization",
                 "2. Improve sentence structure where clearly needed",
-                "3. If the speaker corrects themselves (e.g. \"actually no\", \"I mean\"), keep only the correction",
+                "3. If the speaker corrects themselves (e.g. \"actually no\", \"scratch that\", \"sorry\", \"never mind\"), remove the retracted part and keep only the final corrected version",
                 "4. Keep the speaker's intent and meaning exactly intact",
                 "5. Do NOT add, infer, or embellish content",
                 "6. If the text mixes Hindi and English, preserve the code-switching naturally",
@@ -249,7 +249,7 @@ actor LocalLLMProcessor: PostProcessor {
                 "1. Fix grammar, punctuation, and capitalization",
                 "2. Remove obvious filler words (e.g. um, uh, you know, basically) only when clearly disfluent",
                 "3. Improve sentence structure for clarity",
-                "4. If the speaker corrects themselves (e.g. \"actually no\", \"I mean\"), keep only the correction",
+                "4. If the speaker corrects themselves (e.g. \"actually no\", \"scratch that\", \"sorry\", \"never mind\"), remove the retracted part and keep only the final corrected version",
                 "5. Keep the speaker's intent and meaning exactly intact",
                 "6. Do NOT add, infer, or embellish content",
                 "7. If the text mixes Hindi and English, preserve the code-switching naturally",

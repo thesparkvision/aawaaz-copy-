@@ -107,15 +107,39 @@ struct ShortcutRecorderView: View {
     /// Capture a modifier-only key (like Fn/Globe) as the hotkey.
     /// Only triggers on the press (flag appears), not release.
     private func handleFlagsChangedEvent(_ event: NSEvent) {
-        // Only handle Fn/Globe key (keyCode 63) as a standalone hotkey.
-        // Other modifier keys (Shift, Ctrl, etc.) are captured as part of
-        // a key combination via handleKeyEvent instead.
-        guard event.keyCode == 63,
-              event.modifierFlags.contains(.function) else { return }
+        // Only handle modifier-only keys that we recognise.
+        let modifierOnlyKeyCodes: Set<UInt16> = [54, 55, 56, 58, 59, 60, 61, 62, 63]
+        guard modifierOnlyKeyCodes.contains(event.keyCode) else { return }
+
+        // Fn/Globe (keyCode 63) uses .function flag; others use standard modifier flags.
+        let flagForKey: NSEvent.ModifierFlags? = {
+            switch event.keyCode {
+            case 63: return .function
+            case 54, 55: return .command
+            case 56, 60: return .shift
+            case 58, 61: return .option
+            case 59, 62: return .control
+            default: return nil
+            }
+        }()
+        guard let flag = flagForKey, event.modifierFlags.contains(flag) else { return }
+
+        // Capture any additional modifiers held alongside the key.
+        let relevantModifiers: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        var additionalMods = event.modifierFlags.intersection(relevantModifiers)
+        // Remove the modifier flag of the key itself (if it's a standard modifier)
+        // so it's not double-counted as both the key and a modifier.
+        switch event.keyCode {
+        case 54, 55: additionalMods.remove(.command)
+        case 56, 60: additionalMods.remove(.shift)
+        case 58, 61: additionalMods.remove(.option)
+        case 59, 62: additionalMods.remove(.control)
+        default: break // Fn (.function) is not in relevantModifiers, nothing to remove
+        }
 
         var newConfig = configuration
-        newConfig.keyCode = 63
-        newConfig.modifierFlags = 0
+        newConfig.keyCode = event.keyCode
+        newConfig.modifierFlags = additionalMods.rawValue
         configuration = newConfig
         onUpdate(newConfig)
         stopRecording()

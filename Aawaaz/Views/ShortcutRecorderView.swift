@@ -57,8 +57,12 @@ struct ShortcutRecorderView: View {
 
     private func startRecording() {
         isRecording = true
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            handleKeyEvent(event)
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+            if event.type == .flagsChanged {
+                handleFlagsChangedEvent(event)
+            } else {
+                handleKeyEvent(event)
+            }
             return nil // Consume the event
         }
     }
@@ -95,6 +99,23 @@ struct ShortcutRecorderView: View {
         var newConfig = configuration
         newConfig.keyCode = event.keyCode
         newConfig.modifierFlags = modifiers.rawValue
+        configuration = newConfig
+        onUpdate(newConfig)
+        stopRecording()
+    }
+
+    /// Capture a modifier-only key (like Fn/Globe) as the hotkey.
+    /// Only triggers on the press (flag appears), not release.
+    private func handleFlagsChangedEvent(_ event: NSEvent) {
+        // Only handle Fn/Globe key (keyCode 63) as a standalone hotkey.
+        // Other modifier keys (Shift, Ctrl, etc.) are captured as part of
+        // a key combination via handleKeyEvent instead.
+        guard event.keyCode == 63,
+              event.modifierFlags.contains(.function) else { return }
+
+        var newConfig = configuration
+        newConfig.keyCode = 63
+        newConfig.modifierFlags = 0
         configuration = newConfig
         onUpdate(newConfig)
         stopRecording()

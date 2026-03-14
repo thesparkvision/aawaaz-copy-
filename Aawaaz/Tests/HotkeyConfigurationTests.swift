@@ -7,6 +7,15 @@ final class HotkeyConfigurationTests: XCTestCase {
 
     func testDefaultDisplayString() {
         let config = HotkeyConfiguration.defaultConfiguration
+        XCTAssertEqual(config.displayString, "🌐 Fn")
+    }
+
+    func testOptionSpaceDisplayString() {
+        let config = HotkeyConfiguration(
+            keyCode: 49, // Space
+            modifierFlags: NSEvent.ModifierFlags.option.rawValue,
+            mode: .hold
+        )
         XCTAssertEqual(config.displayString, "⌥Space")
     }
 
@@ -86,5 +95,15 @@ final class HotkeyConfigurationTests: XCTestCase {
             mode: .hold
         )
         XCTAssertTrue(config.displayString.contains("Key(200)"))
+    }
+
+    // MARK: - Modifier-Only Keys
+
+    func testIsModifierOnlyKey() {
+        let fnConfig = HotkeyConfiguration(keyCode: 63, modifierFlags: 0, mode: .hold)
+        XCTAssertTrue(fnConfig.isModifierOnlyKey)
+
+        let spaceConfig = HotkeyConfiguration(keyCode: 49, modifierFlags: 0, mode: .hold)
+        XCTAssertFalse(spaceConfig.isModifierOnlyKey)
     }
 }

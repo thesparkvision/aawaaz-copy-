@@ -99,6 +99,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
 
             VStack(alignment: .leading, spacing: 12) {
+                featureRow(icon: "keyboard", text: "Hold 🌐 Fn to dictate, release to insert")
                 featureRow(icon: "lock.shield", text: "All transcription happens on-device")
                 featureRow(icon: "globe", text: "Hindi, English, and Hinglish support")
                 featureRow(icon: "bolt", text: "Fast — optimized for Apple Silicon")
@@ -188,6 +189,13 @@ struct OnboardingView: View {
                     .font(.callout)
                 Label("Insert transcribed text directly into any text field", systemImage: "text.cursor")
                     .font(.callout)
+            }
+            .padding(.horizontal, 24)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Label("If you use 🌐 Fn as your hotkey (default), set System Settings → Keyboard → \"Press 🌐 to\" → \"Do Nothing\" to avoid conflicts.", systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 24)
 

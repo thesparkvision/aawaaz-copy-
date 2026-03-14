@@ -373,16 +373,16 @@ aawaaz/
 
 #### Step 2.5.1: Default Hotkey Change
 
-- [ ] Change the default hotkey from Cmd+Shift+Space to **Fn** (Globe key) or **Right Ctrl** as primary candidates
-  - [ ] Evaluate Fn/Globe key: on Apple Silicon Macs this is the dictation key by default — test whether we can capture it reliably via event tap without conflicting with macOS Dictation (user may need to disable system dictation first). Document this trade-off
-  - [ ] Evaluate Right Ctrl: rarely used, no system conflicts, works well with event taps. Ergonomically accessible
+- [x] Change the default hotkey from Cmd+Shift+Space to **Fn** (Globe key) or **Right Ctrl** as primary candidates
+  - [x] Evaluate Fn/Globe key: on Apple Silicon Macs this is the dictation key by default — test whether we can capture it reliably via event tap without conflicting with macOS Dictation (user may need to disable system dictation first). Document this trade-off
+  - [x] Evaluate Right Ctrl: rarely used, no system conflicts, works well with event taps. Ergonomically accessible
   - [ ] Test both candidates across Safari, VS Code, Slack, Terminal, Notes — ensure no key leakage to the frontmost app
-  - [ ] Whichever wins, update `HotkeyConfiguration` default in code and onboarding copy
-  - [ ] Keep Cmd+Shift+Space as a documented alternative
-  - [ ] Existing users who already have a saved hotkey should not be affected (only changes the default for new installs)
-- [ ] Set **hold-to-talk** as the default activation mode (change `HotkeyMode` default from whatever it is now to `.hold`)
-  - [ ] Update onboarding to emphasise hold-to-talk: "Hold [key] to dictate, release to insert"
-  - [ ] Toggle mode remains available in Settings for longer dictation
+  - [x] Whichever wins, update `HotkeyConfiguration` default in code and onboarding copy
+  - [x] Keep Cmd+Shift+Space as a documented alternative
+  - [x] Existing users who already have a saved hotkey should not be affected (only changes the default for new installs)
+- [x] Set **hold-to-talk** as the default activation mode (change `HotkeyMode` default from whatever it is now to `.hold`)
+  - [x] Update onboarding to emphasise hold-to-talk: "Hold [key] to dictate, release to insert"
+  - [x] Toggle mode remains available in Settings for longer dictation
 
 #### Step 2.5.2: Listening & Processing Indicator Overhaul
 

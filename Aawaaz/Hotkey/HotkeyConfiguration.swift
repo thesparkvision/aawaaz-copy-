@@ -31,17 +31,43 @@ struct HotkeyConfiguration: Codable, Equatable {
 
     // MARK: - Defaults
 
-    /// Default shortcut: Option + Space (keyCode 49 = Space, Option modifier).
+    /// Default shortcut: Fn/Globe key (keyCode 63, no modifiers, hold-to-talk).
+    ///
+    /// **Note:** On Apple Silicon Macs the Fn key doubles as the Globe key and
+    /// may be configured for Dictation, Emoji, or Input Source by default.
+    /// Users may need to change System Settings → Keyboard → "Press 🌐 to"
+    /// → "Do Nothing" to avoid conflicts.
+    ///
+    /// Previous default (⌥Space) remains a good alternative for users who
+    /// prefer a modifier-key combo.
     static let defaultConfiguration = HotkeyConfiguration(
-        keyCode: 49, // Space
-        modifierFlags: NSEvent.ModifierFlags.option.rawValue,
+        keyCode: 63, // Fn / Globe key
+        modifierFlags: 0,
         mode: .hold
     )
+
+    /// Whether this hotkey uses a modifier-only key (like Fn/Globe) that
+    /// generates `flagsChanged` events instead of `keyDown`/`keyUp`.
+    var isModifierOnlyKey: Bool {
+        switch keyCode {
+        case 54, 55: return true // Right/Left Command
+        case 56, 60: return true // Left/Right Shift
+        case 58, 61: return true // Left/Right Option
+        case 59, 62: return true // Left/Right Control
+        case 63:     return true // Fn / Globe
+        default:     return false
+        }
+    }
 
     // MARK: - Display
 
     /// Human-readable description of the shortcut.
     var displayString: String {
+        // Modifier-only keys like Fn display just the key name
+        if isModifierOnlyKey && modifierFlags == 0 {
+            return keyCodeDisplayName
+        }
+
         var parts: [String] = []
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlags)
         if flags.contains(.control) { parts.append("⌃") }
@@ -60,6 +86,11 @@ struct HotkeyConfiguration: Codable, Equatable {
         case 48: return "Tab"
         case 53: return "Escape"
         case 51: return "Delete"
+        case 63: return "🌐 Fn"
+        case 54, 55: return "⌘"
+        case 56, 60: return "⇧"
+        case 58, 61: return "⌥"
+        case 59, 62: return "⌃"
         case 123: return "←"
         case 124: return "→"
         case 125: return "↓"

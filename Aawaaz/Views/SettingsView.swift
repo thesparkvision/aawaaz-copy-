@@ -37,6 +37,12 @@ struct GeneralSettingsView: View {
                     }
                 )
 
+                if appState.hotkeyConfig.keyCode == 63 {
+                    Label("Set System Settings → Keyboard → \"Press 🌐 to\" → \"Do Nothing\" to avoid conflicts.", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Picker("Mode", selection: Binding(
                     get: { appState.hotkeyConfig.mode },
                     set: { newMode in

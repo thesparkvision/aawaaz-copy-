@@ -39,8 +39,10 @@ final class HotkeyManager {
 
     private var globalKeyDownMonitor: Any?
     private var globalKeyUpMonitor: Any?
+    private var globalFlagsChangedMonitor: Any?
     private var localKeyDownMonitor: Any?
     private var localKeyUpMonitor: Any?
+    private var localFlagsChangedMonitor: Any?
 
     // MARK: - Activation State
 
@@ -85,7 +87,7 @@ final class HotkeyManager {
         configuration = newConfig
         newConfig.save()
 
-        let wasMonitoring = eventTap != nil || globalKeyDownMonitor != nil
+        let wasMonitoring = eventTap != nil || globalKeyDownMonitor != nil || globalFlagsChangedMonitor != nil
         if wasMonitoring {
             stopMonitoring()
             startMonitoring()
@@ -96,7 +98,7 @@ final class HotkeyManager {
     /// fallback. Call this after Accessibility permission is granted at runtime.
     func upgradeToEventTapIfPossible() {
         guard !isEventTapActive,
-              globalKeyDownMonitor != nil else { return }
+              globalKeyDownMonitor != nil || globalFlagsChangedMonitor != nil else { return }
         // Try to upgrade — startMonitoring will prefer the tap.
         stopMonitoring()
         startMonitoring()
@@ -119,7 +121,8 @@ final class HotkeyManager {
     private func installEventTap() -> Bool {
         let eventMask: CGEventMask =
             (1 << CGEventType.keyDown.rawValue) |
-            (1 << CGEventType.keyUp.rawValue)
+            (1 << CGEventType.keyUp.rawValue) |
+            (1 << CGEventType.flagsChanged.rawValue)
 
         let selfPointer = Unmanaged.passUnretained(self).toOpaque()
 
@@ -225,6 +228,52 @@ final class HotkeyManager {
             case .toggle:
                 return Unmanaged.passUnretained(event)
             }
+
+        } else if type == .flagsChanged {
+            // Handle modifier-only keys (like Fn/Globe).
+            guard configuration.isModifierOnlyKey,
+                  keyCode == configuration.keyCode,
+                  let flag = Self.cgModifierFlag(for: keyCode) else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            // Check additional modifiers match (if any configured).
+            let relevantCGFlags: CGEventFlags = [.maskShift, .maskControl, .maskAlternate, .maskCommand]
+            let eventMods = event.flags.intersection(relevantCGFlags)
+            let configMods = Self.cgEventFlags(from: NSEvent.ModifierFlags(rawValue: configuration.modifierFlags))
+            guard eventMods == configMods else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            let isPressed = event.flags.contains(flag)
+
+            if isPressed {
+                switch configuration.mode {
+                case .hold:
+                    guard !isHoldActive else { return nil }
+                    isHoldActive = true
+                    DispatchQueue.main.async { [weak self] in self?.onActivate?() }
+                case .toggle:
+                    if isToggleActive {
+                        isToggleActive = false
+                        DispatchQueue.main.async { [weak self] in self?.onDeactivate?() }
+                    } else {
+                        isToggleActive = true
+                        DispatchQueue.main.async { [weak self] in self?.onActivate?() }
+                    }
+                }
+            } else {
+                switch configuration.mode {
+                case .hold:
+                    guard isHoldActive else { return Unmanaged.passUnretained(event) }
+                    isHoldActive = false
+                    DispatchQueue.main.async { [weak self] in self?.onDeactivate?() }
+                case .toggle:
+                    break // No action on release in toggle mode
+                }
+            }
+
+            return nil // Suppress
         }
 
         return Unmanaged.passUnretained(event)
@@ -240,6 +289,30 @@ final class HotkeyManager {
         return result
     }
 
+    /// Map a modifier key code to its corresponding `CGEventFlags` flag.
+    private static func cgModifierFlag(for keyCode: UInt16) -> CGEventFlags? {
+        switch keyCode {
+        case 54, 55: return .maskCommand     // Right/Left Command
+        case 56, 60: return .maskShift        // Left/Right Shift
+        case 58, 61: return .maskAlternate    // Left/Right Option
+        case 59, 62: return .maskControl      // Left/Right Control
+        case 63:     return .maskSecondaryFn  // Fn / Globe
+        default:     return nil
+        }
+    }
+
+    /// Map a modifier key code to its corresponding `NSEvent.ModifierFlags` flag.
+    private static func nsModifierFlag(for keyCode: UInt16) -> NSEvent.ModifierFlags? {
+        switch keyCode {
+        case 54, 55: return .command   // Right/Left Command
+        case 56, 60: return .shift     // Left/Right Shift
+        case 58, 61: return .option    // Left/Right Option
+        case 59, 62: return .control   // Left/Right Control
+        case 63:     return .function  // Fn / Globe
+        default:     return nil
+        }
+    }
+
     // MARK: - NSEvent Fallback
 
     /// Install observer-only NSEvent monitors as a fallback when the CGEvent tap
@@ -251,6 +324,9 @@ final class HotkeyManager {
         globalKeyUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { [weak self] event in
             self?.handleKeyUp(event)
         }
+        globalFlagsChangedMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.handleFlagsChanged(event)
+        }
 
         localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if self?.handleKeyDown(event) == true {
@@ -260,6 +336,12 @@ final class HotkeyManager {
         }
         localKeyUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { [weak self] event in
             if self?.handleKeyUp(event) == true {
+                return nil
+            }
+            return event
+        }
+        localFlagsChangedMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            if self?.handleFlagsChanged(event) == true {
                 return nil
             }
             return event
@@ -275,6 +357,10 @@ final class HotkeyManager {
             NSEvent.removeMonitor(monitor)
             globalKeyUpMonitor = nil
         }
+        if let monitor = globalFlagsChangedMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalFlagsChangedMonitor = nil
+        }
         if let monitor = localKeyDownMonitor {
             NSEvent.removeMonitor(monitor)
             localKeyDownMonitor = nil
@@ -282,6 +368,10 @@ final class HotkeyManager {
         if let monitor = localKeyUpMonitor {
             NSEvent.removeMonitor(monitor)
             localKeyUpMonitor = nil
+        }
+        if let monitor = localFlagsChangedMonitor {
+            NSEvent.removeMonitor(monitor)
+            localFlagsChangedMonitor = nil
         }
     }
 
@@ -324,6 +414,52 @@ final class HotkeyManager {
         case .toggle:
             return false
         }
+    }
+
+    /// Handle flags-changed events for modifier-only hotkeys (NSEvent fallback).
+    /// Returns `true` if the event was consumed.
+    @discardableResult
+    private func handleFlagsChanged(_ event: NSEvent) -> Bool {
+        guard configuration.isModifierOnlyKey,
+              event.keyCode == configuration.keyCode,
+              let flag = Self.nsModifierFlag(for: event.keyCode) else {
+            return false
+        }
+
+        // Check additional modifiers match (if any configured).
+        let relevantModifiers: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
+        let eventMods = event.modifierFlags.intersection(relevantModifiers)
+        let configMods = NSEvent.ModifierFlags(rawValue: configuration.modifierFlags).intersection(relevantModifiers)
+        guard eventMods == configMods else { return false }
+
+        let isPressed = event.modifierFlags.contains(flag)
+
+        if isPressed {
+            switch configuration.mode {
+            case .hold:
+                guard !isHoldActive else { return true }
+                isHoldActive = true
+                onActivate?()
+            case .toggle:
+                if isToggleActive {
+                    isToggleActive = false
+                    onDeactivate?()
+                } else {
+                    isToggleActive = true
+                    onActivate?()
+                }
+            }
+        } else {
+            switch configuration.mode {
+            case .hold:
+                guard isHoldActive else { return false }
+                isHoldActive = false
+                onDeactivate?()
+            case .toggle:
+                break
+            }
+        }
+        return true
     }
 }
 

@@ -46,8 +46,11 @@
 		AA000060 /* LLMSpikeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100060 /* LLMSpikeRunner.swift */; };
 		AA000061 /* LLMModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100061 /* LLMModelCatalog.swift */; };
 		AA000062 /* LocalLLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100062 /* LocalLLMProcessor.swift */; };
+		AA000072 /* LLMModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100072 /* LLMModelManager.swift */; };
 		AA000063 /* CleanupLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100063 /* CleanupLevel.swift */; };
 		AA000064 /* PostProcessingMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100064 /* PostProcessingMode.swift */; };
+		AA000070 /* PostProcessingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100070 /* PostProcessingSettingsView.swift */; };
+		AA000071 /* DevanagariTransliterator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100071 /* DevanagariTransliterator.swift */; };
 		AA000022 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900030 /* MLXLLM */; };
 		AA000023 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA900031 /* MLXLMCommon */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
@@ -61,6 +64,7 @@
 		AAT00009 /* TextProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10009 /* TextProcessorTests.swift */; };
 		AAT00010 /* LLMSpikeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10010 /* LLMSpikeTests.swift */; };
 		AAT00011 /* CleanupLevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10011 /* CleanupLevelTests.swift */; };
+		AAT00012 /* DevanagariTransliteratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10012 /* DevanagariTransliteratorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -105,8 +109,11 @@
 		AA100060 /* LLMSpikeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeRunner.swift; sourceTree = "<group>"; };
 		AA100061 /* LLMModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMModelCatalog.swift; sourceTree = "<group>"; };
 		AA100062 /* LocalLLMProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMProcessor.swift; sourceTree = "<group>"; };
+		AA100072 /* LLMModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMModelManager.swift; sourceTree = "<group>"; };
 		AA100063 /* CleanupLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupLevel.swift; sourceTree = "<group>"; };
 		AA100064 /* PostProcessingMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessingMode.swift; sourceTree = "<group>"; };
+		AA100070 /* PostProcessingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessingSettingsView.swift; sourceTree = "<group>"; };
+		AA100071 /* DevanagariTransliterator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevanagariTransliterator.swift; sourceTree = "<group>"; };
 		AAT10001 /* VADStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADStateTests.swift; sourceTree = "<group>"; };
 		AAT10002 /* HotkeyConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfigurationTests.swift; sourceTree = "<group>"; };
 		AAT10003 /* HotkeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManagerTests.swift; sourceTree = "<group>"; };
@@ -118,6 +125,7 @@
 		AAT10009 /* TextProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessorTests.swift; sourceTree = "<group>"; };
 		AAT10010 /* LLMSpikeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeTests.swift; sourceTree = "<group>"; };
 		AAT10011 /* CleanupLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupLevelTests.swift; sourceTree = "<group>"; };
+		AAT10012 /* DevanagariTransliteratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevanagariTransliteratorTests.swift; sourceTree = "<group>"; };
 		AAT10100 /* AawaazTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AawaazTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -195,6 +203,7 @@
 				AA100045 /* OverlayState.swift */,
 				AA100035 /* OnboardingView.swift */,
 				AA100044 /* ShortcutRecorderView.swift */,
+				AA100070 /* PostProcessingSettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -295,6 +304,7 @@
 				AAT10009 /* TextProcessorTests.swift */,
 				AAT10010 /* LLMSpikeTests.swift */,
 				AAT10011 /* CleanupLevelTests.swift */,
+				AAT10012 /* DevanagariTransliteratorTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -308,6 +318,7 @@
 				AA100053 /* SelfCorrectionDetector.swift */,
 				AA100054 /* PostProcessor.swift */,
 				AA100055 /* NoOpProcessor.swift */,
+				AA100071 /* DevanagariTransliterator.swift */,
 			);
 			path = TextProcessing;
 			sourceTree = "<group>";
@@ -317,6 +328,7 @@
 			children = (
 				AA100063 /* CleanupLevel.swift */,
 				AA100061 /* LLMModelCatalog.swift */,
+				AA100072 /* LLMModelManager.swift */,
 				AA100062 /* LocalLLMProcessor.swift */,
 				AA100060 /* LLMSpikeRunner.swift */,
 				AA100064 /* PostProcessingMode.swift */,
@@ -480,8 +492,11 @@
 				AA000060 /* LLMSpikeRunner.swift in Sources */,
 				AA000061 /* LLMModelCatalog.swift in Sources */,
 				AA000062 /* LocalLLMProcessor.swift in Sources */,
+				AA000072 /* LLMModelManager.swift in Sources */,
 				AA000063 /* CleanupLevel.swift in Sources */,
 				AA000064 /* PostProcessingMode.swift in Sources */,
+				AA000070 /* PostProcessingSettingsView.swift in Sources */,
+				AA000071 /* DevanagariTransliterator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,6 +515,7 @@
 				AAT00009 /* TextProcessorTests.swift in Sources */,
 				AAT00010 /* LLMSpikeTests.swift in Sources */,
 				AAT00011 /* CleanupLevelTests.swift in Sources */,
+				AAT00012 /* DevanagariTransliteratorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

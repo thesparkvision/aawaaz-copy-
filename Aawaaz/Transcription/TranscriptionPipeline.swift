@@ -274,41 +274,58 @@ final class TranscriptionPipeline {
     /// text field, and show the final result in the overlay.
     ///
     /// Called once after `stopListening()` when all pending transcriptions have completed.
+    ///
+    /// Uses a `defer` block to guarantee status returns to `.idle` and session state
+    /// is cleaned up, even if an unexpected error or early return occurs.
     @MainActor
     private func finalize(session: UUID) async {
         guard sessionID == session, awaitingFinalization, let appState else { return }
 
         cancelFinalizationTimeout()
 
+        // Safety net: always reset status and clean up, no matter how we exit.
+        var didShowResult = false
+        defer {
+            if !didShowResult {
+                appState.status = .idle
+                appState.overlayController.dismiss()
+            }
+            cleanUpSession()
+        }
+
         let rawText = accumulatedSegments.joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !rawText.isEmpty else {
-            appState.status = .idle
-            appState.overlayController.dismiss()
-            cleanUpSession()
-            return
-        }
+        guard !rawText.isEmpty else { return }
+
+        // Store raw transcription for settings preview (Step 3.6)
+        appState.lastRawTranscription = rawText
 
         // Show processing state while post-processing runs
         appState.status = .processing
         appState.showOverlayProcessing()
 
-        // Snapshot the insertion context once for both post-processing and insertion.
-        // This avoids context drift if the user switches apps during LLM processing.
+        // Snapshot the insertion context early — before any async model work —
+        // so context doesn't drift if the user switches apps during LLM loading.
         let insertionContext = InsertionContext.current() ?? .unknown
+
+        // Ensure the LLM processor uses the user's selected model (if downloaded).
+        // Non-critical — if switch fails, proceed with the currently loaded model.
+        if appState.postProcessingMode == .local,
+           appState.llmModelManager.isDownloaded(appState.selectedLLMModel) {
+            let selectedModel = appState.selectedLLMModel
+            try? await llmProcessor.switchModel(to: selectedModel)
+        }
 
         // Run the post-processing chain
         let processedText = await postProcess(rawText, context: insertionContext)
 
         guard sessionID == session else { return }
 
-        guard !processedText.isEmpty else {
-            appState.status = .idle
-            appState.overlayController.dismiss()
-            cleanUpSession()
-            return
-        }
+        // Store processed transcription for settings preview (Step 3.6)
+        appState.lastProcessedTranscription = processedText
+
+        guard !processedText.isEmpty else { return }
 
         appState.currentTranscription = processedText
 
@@ -319,11 +336,11 @@ final class TranscriptionPipeline {
 
         let methodLabel = context.insertionMethod.rawValue
         appState.showOverlayResult(processedText)
+        didShowResult = true
 
         print("[Pipeline] Final text inserted via \(methodLabel): \(processedText)")
 
         appState.status = .idle
-        cleanUpSession()
     }
 
     // MARK: - Private — Session Management
@@ -364,35 +381,64 @@ final class TranscriptionPipeline {
     private let textProcessor = TextProcessor()
     private let llmProcessor = LocalLLMProcessor()
     private let noOpProcessor = NoOpProcessor()
+    private let transliterator = DevanagariTransliterator()
 
     /// Run the post-processing chain on accumulated text.
     ///
     /// Chain:
     /// 1. Self-correction detection (Step 3.1)
     /// 2. Filler word removal (Step 3.1)
-    /// 3. LLM cleanup when ``PostProcessingMode`` is `.local` (Steps 3.3–3.5)
+    /// 3. LLM cleanup when ``PostProcessingMode`` is `.local` and model is downloaded (Steps 3.3–3.5)
+    /// 4. Devanagari → Roman transliteration when LLM is off and Romanized script is selected (Step 3.7)
     ///
-    /// If LLM processing fails, the pre-LLM result is used as fallback.
+    /// If LLM processing fails or model is not downloaded, the pre-LLM result is used as fallback.
     private func postProcess(_ text: String, context: InsertionContext) async -> String {
         let config = appState?.textProcessingConfig ?? .default
         let mode = appState?.postProcessingMode ?? .off
         let cleanupLevel = appState?.cleanupLevel ?? .medium
+        let language = appState?.selectedLanguage ?? .auto
+        let hinglishScript = appState?.selectedHinglishScript ?? .romanized
+
+        // Determine script preference for Hinglish language only (Step 3.7)
+        let scriptPreference: HinglishScript? = (language == .hinglish) ? hinglishScript : nil
 
         // Step 1-2: Deterministic text processing
         let preLLMText = textProcessor.process(text, config: config)
 
-        // Step 3: LLM post-processing (if enabled)
-        let processor: PostProcessor = (mode == .local) ? llmProcessor : noOpProcessor
+        // Step 3: LLM post-processing (if enabled AND model is downloaded)
+        let llmAvailable = mode == .local
+            && (appState?.llmModelManager.isDownloaded(appState?.selectedLLMModel ?? LLMModelCatalog.defaultModel) ?? false)
+        let processor: PostProcessor = llmAvailable ? llmProcessor : noOpProcessor
 
+        if mode == .local && !llmAvailable {
+            print("[Pipeline] LLM post-processing enabled but model not downloaded — skipping")
+            await MainActor.run { [weak self] in
+                self?.appState?.pipelineError = "LLM model not downloaded. Download it in Settings → Post-Processing."
+            }
+        }
+
+        var result: String
+        var llmSucceeded = false
         do {
-            return try await processor.process(
+            result = try await processor.process(
                 rawText: preLLMText,
                 context: context,
-                cleanupLevel: cleanupLevel
+                cleanupLevel: cleanupLevel,
+                scriptPreference: scriptPreference
             )
+            llmSucceeded = llmAvailable
         } catch {
             print("[Pipeline] LLM post-processing failed, using pre-LLM text: \(error.localizedDescription)")
-            return preLLMText
+            result = preLLMText
         }
+
+        // Step 4: Devanagari → Roman transliteration when LLM did not handle it (Step 3.7)
+        // When LLM succeeds, it handles script preference via the prompt.
+        // When LLM is off or failed, run the deterministic transliterator as fallback.
+        if !llmSucceeded, scriptPreference == .romanized, transliterator.containsDevanagari(result) {
+            result = transliterator.transliterate(result)
+        }
+
+        return result
     }
 }

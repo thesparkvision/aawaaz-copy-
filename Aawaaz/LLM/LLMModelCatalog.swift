@@ -6,6 +6,8 @@ import Foundation
 /// loaded by ``LocalLLMProcessor`` via `loadModelContainer(id:)`.
 enum LLMModel: String, CaseIterable, Identifiable, Codable, Sendable {
     case qwen3_0_6B = "qwen3-0.6b"
+    case qwen3_5_0_8B_4bit = "qwen3.5-0.8b-4bit"
+    case qwen3_5_0_8B_8bit = "qwen3.5-0.8b-8bit"
     case qwen3_1_7B = "qwen3-1.7b"
     case qwen3_4B = "qwen3-4b"
 
@@ -32,9 +34,8 @@ struct LLMModelInfo: Identifiable, Equatable, Sendable {
 
 /// Catalog of LLM models available for local text cleanup.
 ///
-/// Mirrors the pattern of ``ModelCatalog`` (Whisper models). Models are
-/// downloaded on first use by the MLX HuggingFace Hub integration; there
-/// is no separate download step required by the app.
+/// Mirrors the pattern of ``ModelCatalog`` (Whisper models). Models must
+/// be explicitly downloaded via ``LLMModelManager`` before use.
 enum LLMModelCatalog {
 
     static let models: [LLMModelInfo] = [
@@ -48,6 +49,28 @@ enum LLMModelCatalog {
             speed: "<0.5s",
             quality: "Good",
             recommendedFor: "Default — fast, low memory"
+        ),
+        LLMModelInfo(
+            model: .qwen3_5_0_8B_4bit,
+            displayName: "Qwen 3.5 0.8B (4-bit)",
+            huggingFaceID: "mlx-community/Qwen3.5-0.8B-MLX-4bit",
+            sizeDescription: "~622 MB",
+            sizeBytes: 622_000_000,
+            ramUsage: "~1.2 GB",
+            speed: "<0.5s",
+            quality: "High",
+            recommendedFor: "Better quality, still fast"
+        ),
+        LLMModelInfo(
+            model: .qwen3_5_0_8B_8bit,
+            displayName: "Qwen 3.5 0.8B (8-bit)",
+            huggingFaceID: "mlx-community/Qwen3.5-0.8B-MLX-8bit",
+            sizeDescription: "~980 MB",
+            sizeBytes: 980_000_000,
+            ramUsage: "~1.5 GB",
+            speed: "<0.5s",
+            quality: "High",
+            recommendedFor: "Higher precision 0.8B — 16 GB+ RAM"
         ),
         LLMModelInfo(
             model: .qwen3_1_7B,

@@ -120,6 +120,18 @@ final class AppState {
     var cleanupLevel: CleanupLevel = .load() {
         didSet { cleanupLevel.save() }
     }
+    var selectedLLMModel: LLMModel {
+        didSet { UserDefaults.standard.set(selectedLLMModel.rawValue, forKey: "selectedLLMModel") }
+    }
+
+    // LLM model management
+    var llmModelManager = LLMModelManager()
+
+    /// Last raw transcription (before any processing) — used for settings preview.
+    var lastRawTranscription: String = ""
+
+    /// Last processed transcription (after all processing) — used for settings preview.
+    var lastProcessedTranscription: String = ""
 
     // Hotkey
     @ObservationIgnored
@@ -164,6 +176,12 @@ final class AppState {
         } else {
             self.selectedHinglishScript = .romanized
         }
+        if let raw = UserDefaults.standard.string(forKey: "selectedLLMModel"),
+           let model = LLMModel(rawValue: raw) {
+            self.selectedLLMModel = model
+        } else {
+            self.selectedLLMModel = LLMModelCatalog.recommendedModel()
+        }
 
         // Restore persisted audio device selection before refreshing so
         // refreshAudioDevices() can clear a stale UID for a disconnected device.
@@ -179,6 +197,14 @@ final class AppState {
         // Keep selectedModel in sync whenever models are downloaded or deleted.
         modelManager.onModelsChanged = { [weak self] in
             self?.reconcileSelectedModel()
+        }
+
+        // Ensure selected LLM model is downloaded; fall back to first downloaded.
+        reconcileSelectedLLMModel()
+
+        // Keep selectedLLMModel in sync whenever LLM models are downloaded or deleted.
+        llmModelManager.onModelsChanged = { [weak self] in
+            self?.reconcileSelectedLLMModel()
         }
 
         // Defer hotkey setup so it doesn't interfere with SwiftUI's initial
@@ -199,6 +225,14 @@ final class AppState {
         if !modelManager.isDownloaded(selectedModel),
            let first = WhisperModel.allCases.first(where: { modelManager.isDownloaded($0) }) {
             selectedModel = first
+        }
+    }
+
+    /// Ensure `selectedLLMModel` points to a downloaded model; fall back to the first available.
+    func reconcileSelectedLLMModel() {
+        if !llmModelManager.isDownloaded(selectedLLMModel),
+           let first = LLMModel.allCases.first(where: { llmModelManager.isDownloaded($0) }) {
+            selectedLLMModel = first
         }
     }
 

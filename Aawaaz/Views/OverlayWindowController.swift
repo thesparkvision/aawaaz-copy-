@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// The overlay is an `NSPanel` configured to:
 /// - Float above all windows (non-activating, so focus stays in the user's app)
-/// - Position near the mouse cursor when shown
+/// - Position at the bottom center of the screen
 /// - Auto-dismiss after a configurable delay for transcription results
 /// - Fade in and out with animation
 ///
@@ -26,7 +26,7 @@ final class OverlayWindowController {
 
     // MARK: - Public API
 
-    /// Show the overlay with a listening indicator near the mouse cursor.
+    /// Show the overlay with a listening indicator at the bottom center of the screen.
     func showListening() {
         cancelAutoDismiss()
         overlayState.status = .listening
@@ -105,7 +105,7 @@ final class OverlayWindowController {
         if panel?.isVisible != true {
             // First show — position, fade in
             resizeToFit()
-            positionNearMouse()
+            positionBottomCenter()
             panel?.alphaValue = 0
             panel?.orderFrontRegardless()
             NSAnimationContext.runAnimationGroup { context in
@@ -166,32 +166,22 @@ final class OverlayWindowController {
         }
     }
 
-    private func positionNearMouse() {
+    private func positionBottomCenter() {
         guard let panel else { return }
 
         let mouseLocation = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) })
-                ?? NSScreen.main else { return }
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) })
+            ?? NSScreen.main
+        guard let screen else { return }
 
         let panelSize = panel.frame.size
         let screenFrame = screen.visibleFrame
 
-        // Position slightly below and to the right of the cursor
-        var origin = NSPoint(
-            x: mouseLocation.x + 16,
-            y: mouseLocation.y - panelSize.height - 16
+        // Center horizontally, place near the bottom with some padding
+        let origin = NSPoint(
+            x: screenFrame.midX - panelSize.width / 2,
+            y: screenFrame.minY + 40
         )
-
-        // Keep on screen
-        if origin.x + panelSize.width > screenFrame.maxX {
-            origin.x = mouseLocation.x - panelSize.width - 16
-        }
-        if origin.y < screenFrame.minY {
-            origin.y = mouseLocation.y + 24
-        }
-        if origin.x < screenFrame.minX {
-            origin.x = screenFrame.minX + 8
-        }
 
         panel.setFrameOrigin(origin)
     }

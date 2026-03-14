@@ -72,10 +72,15 @@ actor WhisperManager {
     /// - Parameters:
     ///   - samples: PCM audio at 16 kHz, mono, Float32.
     ///   - language: Language mode controlling auto-detect vs forced language.
+    ///   - hinglishScript: Script preference for Hinglish output (only used when language is `.hinglish`).
     /// - Returns: Transcription result with full text and per-segment detail.
-    func transcribe(samples: [Float], language: LanguageMode = .auto) throws -> TranscriptionResult {
+    func transcribe(samples: [Float], language: LanguageMode = .auto, hinglishScript: HinglishScript = .romanized) throws -> TranscriptionResult {
         guard let ctx = context else {
             throw WhisperError.modelNotLoaded
+        }
+
+        guard !samples.isEmpty else {
+            return TranscriptionResult(text: "", segments: [])
         }
 
         var params = whisper_full_default_params(WHISPER_SAMPLING_BEAM_SEARCH)
@@ -87,18 +92,44 @@ actor WhisperManager {
         params.no_timestamps = true
         params.single_segment = false
 
-        // Language: nil (NULL) triggers auto-detect in whisper.cpp
+        // Never translate — always transcribe. Without this, Whisper may
+        // translate Hindi words to English instead of preserving them.
+        params.translate = false
+
+        // Language: nil (NULL) triggers auto-detect in whisper.cpp.
+        // Hinglish uses "hi" so Whisper expects Hindi and naturally picks up
+        // embedded English words without translating.
         let languageCStr: UnsafeMutablePointer<CChar>?
         switch language {
-        case .auto, .hinglish:
+        case .auto:
             languageCStr = nil
         case .english:
             languageCStr = strdup("en")
-        case .hindi:
+        case .hindi, .hinglish:
             languageCStr = strdup("hi")
         }
         defer { languageCStr.map { free($0) } }
         params.language = UnsafePointer(languageCStr)
+        params.detect_language = (language == .auto)
+
+        // Bias Whisper toward Hinglish output via initial_prompt when in Hinglish mode.
+        let initialPromptCStr: UnsafeMutablePointer<CChar>?
+        if language == .hinglish {
+            let prompt: String
+            switch hinglishScript {
+            case .romanized:
+                prompt = "Yeh ek Hinglish example hai. Meeting schedule karna hai, please email bhej do."
+            case .devanagari:
+                prompt = "यह एक Hinglish example है। Meeting schedule करना है, please email भेज दो।"
+            case .mixed:
+                prompt = ""
+            }
+            initialPromptCStr = prompt.isEmpty ? nil : strdup(prompt)
+        } else {
+            initialPromptCStr = nil
+        }
+        defer { initialPromptCStr.map { free($0) } }
+        params.initial_prompt = UnsafePointer(initialPromptCStr)
 
         let status = samples.withUnsafeBufferPointer { ptr in
             whisper_full(ctx, params, ptr.baseAddress, Int32(samples.count))

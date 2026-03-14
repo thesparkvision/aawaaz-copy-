@@ -176,7 +176,8 @@ final class TranscriptionPipeline {
         do {
             let result = try await whisperManager.transcribe(
                 samples: samples,
-                language: appState.selectedLanguage
+                language: appState.selectedLanguage,
+                hinglishScript: appState.selectedHinglishScript
             )
 
             let elapsed = CFAbsoluteTimeGetCurrent() - startTime

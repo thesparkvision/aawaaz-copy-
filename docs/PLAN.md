@@ -406,22 +406,22 @@ aawaaz/
 
 **Immediate fixes** (apply to `WhisperManager.swift`):
 
-- [ ] Explicitly set `params.translate = false` in `transcribe()` to force transcription mode (never translate)
-- [ ] For `.hinglish` language mode, change from `language = nil` to `language = "hi"` — this tells Whisper to expect Hindi, and it will naturally pick up English words embedded in Hindi speech without translating them. Auto-detect (`nil`) is unreliable for code-switching
-- [ ] For `.auto` mode, keep `language = nil` but still set `translate = false`
+- [x] Explicitly set `params.translate = false` in `transcribe()` to force transcription mode (never translate)
+- [x] For `.hinglish` language mode, change from `language = nil` to `language = "hi"` — this tells Whisper to expect Hindi, and it will naturally pick up English words embedded in Hindi speech without translating them. Auto-detect (`nil`) is unreliable for code-switching
+- [x] For `.auto` mode, keep `language = nil` but still set `translate = false`
 
 **initial_prompt biasing** (improves Hinglish output quality):
 
-- [ ] When language mode is `.hinglish`, set `params.initial_prompt` to a Romanized Hindi-English sample:
+- [x] When language mode is `.hinglish`, set `params.initial_prompt` to a Romanized Hindi-English sample:
   ```
   "Yeh ek Hinglish example hai. Meeting schedule karna hai, please email bhej do."
   ```
   This primes Whisper to output code-switched text in the user's expected script (Roman/Latin for Hindi words mixed with English) instead of Devanagari or full translation
-- [ ] Add a user preference for Hinglish script output:
+- [x] Add a user preference for Hinglish script output:
   - **Romanized** (default): "mujhe meeting schedule karni hai" — initial_prompt uses Roman script samples
   - **Devanagari**: "मुझे meeting schedule करनी है" — initial_prompt uses Devanagari samples
   - **Mixed**: Let Whisper decide per word — no script bias in prompt
-- [ ] Store preference in UserDefaults, add to Language section in Settings
+- [x] Store preference in UserDefaults, add to Language section in Settings
 
 **How WisprFlow handles this** (for reference — our approach parallels theirs):
 - They use **custom fine-tuned Hinglish models** (we plan IndicWhisper in Phase 5)

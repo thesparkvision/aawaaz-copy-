@@ -67,6 +67,22 @@ struct GeneralSettingsView: View {
                         Text(mode.rawValue).tag(mode)
                     }
                 }
+
+                if appState.selectedLanguage == .hinglish {
+                    Picker("Hinglish Script", selection: $state.selectedHinglishScript) {
+                        ForEach(HinglishScript.allCases) { script in
+                            Text(script.rawValue).tag(script)
+                        }
+                    }
+
+                    Text(appState.selectedHinglishScript.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text("Biases output toward your preferred script. Results may still vary by utterance.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
 
             Section("Audio") {

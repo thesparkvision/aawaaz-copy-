@@ -31,6 +31,22 @@ enum LanguageMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum HinglishScript: String, CaseIterable, Identifiable {
+    case romanized = "Romanized"
+    case devanagari = "Devanagari"
+    case mixed = "Mixed"
+
+    var id: String { rawValue }
+
+    var description: String {
+        switch self {
+        case .romanized: return "\"mujhe meeting schedule karni hai\""
+        case .devanagari: return "\"मुझे meeting schedule करनी है\""
+        case .mixed: return "Let Whisper decide per word"
+        }
+    }
+}
+
 enum WhisperModel: String, CaseIterable, Identifiable {
     case small = "small"
     case turbo = "turbo"
@@ -60,6 +76,9 @@ final class AppState {
     }
     var selectedLanguage: LanguageMode {
         didSet { UserDefaults.standard.set(selectedLanguage.rawValue, forKey: "selectedLanguage") }
+    }
+    var selectedHinglishScript: HinglishScript {
+        didSet { UserDefaults.standard.set(selectedHinglishScript.rawValue, forKey: "selectedHinglishScript") }
     }
 
     // Model management
@@ -125,6 +144,12 @@ final class AppState {
             self.selectedLanguage = lang
         } else {
             self.selectedLanguage = .auto
+        }
+        if let raw = UserDefaults.standard.string(forKey: "selectedHinglishScript"),
+           let script = HinglishScript(rawValue: raw) {
+            self.selectedHinglishScript = script
+        } else {
+            self.selectedHinglishScript = .romanized
         }
 
         // Restore persisted audio device selection before refreshing so

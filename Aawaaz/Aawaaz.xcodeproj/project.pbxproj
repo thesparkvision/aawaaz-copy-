@@ -44,6 +44,8 @@
 		AA000054 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100054 /* PostProcessor.swift */; };
 		AA000055 /* NoOpProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100055 /* NoOpProcessor.swift */; };
 		AA000060 /* LLMSpikeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100060 /* LLMSpikeRunner.swift */; };
+		AA000061 /* LLMModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100061 /* LLMModelCatalog.swift */; };
+		AA000062 /* LocalLLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100062 /* LocalLLMProcessor.swift */; };
 		AA000022 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900030 /* MLXLLM */; };
 		AA000023 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA900031 /* MLXLMCommon */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
@@ -98,6 +100,8 @@
 		AA100054 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		AA100055 /* NoOpProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoOpProcessor.swift; sourceTree = "<group>"; };
 		AA100060 /* LLMSpikeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeRunner.swift; sourceTree = "<group>"; };
+		AA100061 /* LLMModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMModelCatalog.swift; sourceTree = "<group>"; };
+		AA100062 /* LocalLLMProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMProcessor.swift; sourceTree = "<group>"; };
 		AAT10001 /* VADStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADStateTests.swift; sourceTree = "<group>"; };
 		AAT10002 /* HotkeyConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfigurationTests.swift; sourceTree = "<group>"; };
 		AAT10003 /* HotkeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManagerTests.swift; sourceTree = "<group>"; };
@@ -304,6 +308,8 @@
 		AA300015 /* LLM */ = {
 			isa = PBXGroup;
 			children = (
+				AA100061 /* LLMModelCatalog.swift */,
+				AA100062 /* LocalLLMProcessor.swift */,
 				AA100060 /* LLMSpikeRunner.swift */,
 			);
 			path = LLM;
@@ -463,6 +469,8 @@
 				AA000054 /* PostProcessor.swift in Sources */,
 				AA000055 /* NoOpProcessor.swift in Sources */,
 				AA000060 /* LLMSpikeRunner.swift in Sources */,
+				AA000061 /* LLMModelCatalog.swift in Sources */,
+				AA000062 /* LocalLLMProcessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,0 +1,96 @@
+import Foundation
+
+/// Available LLM models for local text cleanup.
+///
+/// Each case maps to an MLX-quantized HuggingFace artifact that can be
+/// loaded by ``LocalLLMProcessor`` via `loadModelContainer(id:)`.
+enum LLMModel: String, CaseIterable, Identifiable, Codable, Sendable {
+    case qwen3_0_6B = "qwen3-0.6b"
+    case qwen3_1_7B = "qwen3-1.7b"
+    case qwen3_4B = "qwen3-4b"
+
+    var id: String { rawValue }
+}
+
+/// Metadata for an LLM model in the catalog.
+struct LLMModelInfo: Identifiable, Equatable, Sendable {
+    let model: LLMModel
+    let displayName: String
+
+    /// HuggingFace model identifier passed to `loadModelContainer(id:)`.
+    let huggingFaceID: String
+
+    let sizeDescription: String
+    let sizeBytes: Int64
+    let ramUsage: String
+    let speed: String
+    let quality: String
+    let recommendedFor: String
+
+    var id: String { model.id }
+}
+
+/// Catalog of LLM models available for local text cleanup.
+///
+/// Mirrors the pattern of ``ModelCatalog`` (Whisper models). Models are
+/// downloaded on first use by the MLX HuggingFace Hub integration; there
+/// is no separate download step required by the app.
+enum LLMModelCatalog {
+
+    static let models: [LLMModelInfo] = [
+        LLMModelInfo(
+            model: .qwen3_0_6B,
+            displayName: "Qwen 3 0.6B",
+            huggingFaceID: "mlx-community/Qwen3-0.6B-4bit",
+            sizeDescription: "~470 MB",
+            sizeBytes: 470_000_000,
+            ramUsage: "~1 GB",
+            speed: "<0.5s",
+            quality: "Good",
+            recommendedFor: "Default — fast, low memory"
+        ),
+        LLMModelInfo(
+            model: .qwen3_1_7B,
+            displayName: "Qwen 3 1.7B",
+            huggingFaceID: "mlx-community/Qwen3-1.7B-4bit",
+            sizeDescription: "~1.1 GB",
+            sizeBytes: 1_100_000_000,
+            ramUsage: "~1.5 GB",
+            speed: "~1–2s",
+            quality: "High",
+            recommendedFor: "Best balance — 16 GB+ RAM"
+        ),
+        LLMModelInfo(
+            model: .qwen3_4B,
+            displayName: "Qwen 3 4B",
+            huggingFaceID: "mlx-community/Qwen3-4B-4bit",
+            sizeDescription: "~2.5 GB",
+            sizeBytes: 2_500_000_000,
+            ramUsage: "~3 GB",
+            speed: "~2–3s",
+            quality: "Very High",
+            recommendedFor: "Quality mode — 16 GB+ RAM"
+        ),
+    ]
+
+    /// The default model for new installs.
+    static let defaultModel: LLMModel = .qwen3_0_6B
+
+    /// Look up metadata for a specific model.
+    static func info(for model: LLMModel) -> LLMModelInfo {
+        models.first { $0.model == model }!
+    }
+
+    /// Suggest a model based on available system RAM.
+    ///
+    /// - 16 GB+: Qwen 3 1.7B (best balance of speed and quality)
+    /// - <16 GB: Qwen 3 0.6B (fast and lightweight)
+    static func recommendedModel() -> LLMModel {
+        systemMemoryGB >= 16 ? .qwen3_1_7B : .qwen3_0_6B
+    }
+
+    /// Total physical memory in GB.
+    static var systemMemoryGB: Int {
+        Int(ProcessInfo.processInfo.physicalMemory / (1024 * 1024 * 1024))
+    }
+}

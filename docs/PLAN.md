@@ -514,25 +514,26 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
     - Memory: ~610 MB total after inference
     - Output quality: fillers removed, grammar fixed, clean text
     - **Go decision: MLX Swift LM is the primary runtime ✅**
-  - [ ] **TODO:** Move MLX deps from app target to test-only (currently linked in main target for build validation)
+  - [x] ~~Move MLX deps from app target to test-only~~ — No longer needed: MLX deps stay in app target for `LocalLLMProcessor`
 - [x] Runtime decision: **MLX Swift LM** confirmed as primary runtime
   - Apple-Silicon-native, official Qwen MLX artifacts, Swift-first API
   - Fallback to llama.cpp only if MLX blocks shipping later
-- [ ] Add the chosen runtime as a Swift Package dependency
-- [ ] `LLMModelCatalog.swift` — Catalog of available LLM models and runtime-specific artifacts:
+- [x] Add the chosen runtime as a Swift Package dependency — already linked (`mlx-swift-lm`, MLXLLM + MLXLMCommon products)
+- [x] `LLMModelCatalog.swift` — Catalog of available LLM models and runtime-specific artifacts:
   | Model | Preferred Runtime | Artifact | Approx Size | RAM | Speed (M2+) | Quality |
   |-------|-------------------|----------|-------------|-----|-------------|---------|
-  | **Qwen 3 0.6B** | **MLX Swift LM** | `Qwen/Qwen3-0.6B-MLX-6bit` | ~0.47 GB | ~1 GB | <0.5s | Good — **default** |
-  | Qwen 3.5 0.8B | Validate after runtime spike | exact artifact TBD | ~0.5 GB | ~1.2 GB | <0.5s | High |
-  | Gemma 3 1B | Validate after runtime spike | exact artifact TBD | ~0.7 GB | ~1.5 GB | ~0.5s | High |
-- [ ] `LocalLLMProcessor.swift`:
-  - [ ] Load the chosen runtime artifact (MLX by default if the spike passes; GGUF only if we intentionally choose `llama.cpp`)
-  - [ ] Construct prompt: system instruction + context + raw text → cleaned text
-  - [ ] For Qwen, force non-thinking / direct cleanup behavior so the model returns only rewritten text
-  - [ ] Run inference with low temperature (0.1-0.2 for cleanup tasks)
-  - [ ] Parse output, extract cleaned text
-  - [ ] Model lazy-load and unload support
-  - [ ] Smart memory management: on 8GB machines, recommend Qwen 3 0.6B; on 16GB+, allow larger models
+  | **Qwen 3 0.6B** | **MLX Swift LM** | `mlx-community/Qwen3-0.6B-4bit` | ~0.47 GB | ~1 GB | <0.5s | Good — **default** |
+  | Qwen 3 1.7B | MLX Swift LM | `mlx-community/Qwen3-1.7B-4bit` | ~1.1 GB | ~1.5 GB | ~1–2s | High |
+  | Qwen 3 4B | MLX Swift LM | `mlx-community/Qwen3-4B-4bit` | ~2.5 GB | ~3 GB | ~2–3s | Very High |
+- [x] `LocalLLMProcessor.swift`:
+  - [x] Load the chosen runtime artifact (MLX via `loadModelContainer(id:)`)
+  - [x] Construct prompt: system instruction + context (app category + field type) + raw text → cleaned text
+  - [x] For Qwen, force non-thinking / direct cleanup behavior (`enable_thinking: false` + `stripThinkingTags` safety net)
+  - [x] Run inference with low temperature (0.1) for deterministic cleanup
+  - [x] Parse output, extract cleaned text (thinking tag stripping, empty-output fallback)
+  - [x] Model lazy-load and unload support (with reentrancy-safe concurrent load coordination)
+  - [x] Smart memory management: `LLMModelCatalog.recommendedModel()` recommends Qwen 3 0.6B on <16 GB, Qwen 3 1.7B on 16 GB+
+
 
 #### Step 3.4: Remote LLM Integration - Defer for later
 

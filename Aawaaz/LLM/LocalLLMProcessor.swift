@@ -56,12 +56,12 @@ actor LocalLLMProcessor: PostProcessor {
 
     // MARK: - PostProcessor
 
-    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel) async throws -> String {
+    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel, scriptPreference: HinglishScript? = nil) async throws -> String {
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return rawText }
 
         let container = try await ensureModelLoaded()
-        let systemPrompt = Self.buildSystemPrompt(for: context, cleanupLevel: cleanupLevel)
+        let systemPrompt = Self.buildSystemPrompt(for: context, cleanupLevel: cleanupLevel, scriptPreference: scriptPreference)
 
         let session = ChatSession(
             container,
@@ -216,7 +216,8 @@ actor LocalLLMProcessor: PostProcessor {
     /// at all levels.
     static func buildSystemPrompt(
         for context: InsertionContext,
-        cleanupLevel: CleanupLevel
+        cleanupLevel: CleanupLevel,
+        scriptPreference: HinglishScript? = nil
     ) -> String {
         var instructions: [String] = []
         let fieldConstraint = fieldTypeConstraint(for: context.fieldType)
@@ -254,6 +255,18 @@ actor LocalLLMProcessor: PostProcessor {
                 "7. If the text mixes Hindi and English, preserve the code-switching naturally",
                 categoryInstruction,
             ]
+        }
+
+        // Add script preference instruction for Hinglish
+        if let script = scriptPreference {
+            switch script {
+            case .romanized:
+                instructions.append("SCRIPT: Transliterate any Devanagari (Hindi) script to Roman/Latin script (e.g. \"नमस्ते\" → \"namaste\")")
+            case .devanagari:
+                instructions.append("SCRIPT: Keep Hindi portions in Devanagari script. Do not romanize Hindi words.")
+            case .mixed:
+                break // Let the model decide naturally
+            }
         }
 
         if !fieldConstraint.isEmpty {

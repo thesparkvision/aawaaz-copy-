@@ -14,6 +14,11 @@ struct SettingsView: View {
                 .tabItem {
                     Label("Models", systemImage: "cpu")
                 }
+
+            PostProcessingSettingsView()
+                .tabItem {
+                    Label("Post-Processing", systemImage: "wand.and.stars")
+                }
         }
         .frame(width: 500, height: 480)
     }

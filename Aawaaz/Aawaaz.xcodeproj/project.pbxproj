@@ -53,6 +53,7 @@
 		AA000071 /* DevanagariTransliterator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100071 /* DevanagariTransliterator.swift */; };
 		AA000022 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900030 /* MLXLLM */; };
 		AA000023 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA900031 /* MLXLMCommon */; };
+		AA000024 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900032 /* MLXVLM */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
 		AAT00002 /* HotkeyConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10002 /* HotkeyConfigurationTests.swift */; };
 		AAT00003 /* HotkeyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10003 /* HotkeyManagerTests.swift */; };
@@ -138,6 +139,7 @@
 				AA000021 /* whisper in Frameworks */,
 				AA000022 /* MLXLLM in Frameworks */,
 				AA000023 /* MLXLMCommon in Frameworks */,
+				AA000024 /* MLXVLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +359,7 @@
 				AA900020 /* whisper */,
 				AA900030 /* MLXLLM */,
 				AA900031 /* MLXLMCommon */,
+				AA900032 /* MLXVLM */,
 			);
 			productName = Aawaaz;
 			productReference = AA100008 /* Aawaaz.app */;
@@ -784,8 +787,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.29.1;
+				kind = revision;
+				revision = 405162196eb484eeaa4afcc7bd354f9b559a11d5;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -809,6 +812,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXLMCommon;
+		};
+		AA900032 /* MLXVLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXVLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -564,19 +564,21 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
 
 #### Step 3.6: Settings Integration
 
-- [ ] Add Post-Processing tab to Settings
-- [ ] Toggle: Off / Local / Remote
-- [ ] Model selection (for local) — show size/speed/quality trade-offs from LLMModelCatalog
-- [ ] LLM model download/delete UI (reuse pattern from ModelDownloadView)
-- [ ] API key entry (for remote) with test button
-- [ ] Cleanup level selector
-- [ ] Preview: show raw vs. cleaned text for last transcription
+- [x] Add Post-Processing tab to Settings
+- [x] Toggle: Off / Local ~~/ Remote~~ (Remote deferred to Step 3.4)
+- [x] Model selection (for local) — show size/speed/quality trade-offs from LLMModelCatalog
+- [x] ~~LLM model download/delete UI (reuse pattern from ModelDownloadView)~~ — MLX models auto-download on first use; UI shows metadata and selection with auto-download note
+- [ ] API key entry (for remote) with test button — deferred with Step 3.4
+- [x] Cleanup level selector
+- [x] Preview: show raw vs. cleaned text for last transcription
 
 #### Step 3.7: Script Preference (Hinglish-specific)
 
-- [ ] Setting: Hindi portions in Devanagari vs. Romanized
-- [ ] If Romanized preferred, add to LLM prompt: "Transliterate any Devanagari script to Roman/Latin script"
-- [ ] If no LLM, implement basic Devanagari → Roman transliteration (or vice versa) as a simple post-processor
+- [x] Setting: Hindi portions in Devanagari vs. Romanized (already in General settings; wired to LLM and transliterator)
+- [x] If Romanized preferred, add to LLM prompt: "Transliterate any Devanagari script to Roman/Latin script"
+- [x] If no LLM, implement basic Devanagari → Roman transliteration (or vice versa) as a simple post-processor
+- [x] `DevanagariTransliterator.swift` — Unicode-scalar-based transliteration with consonants, vowels, matras, virama, nukta, anusvara, chandrabindu, numerals
+- [x] `DevanagariTransliteratorTests.swift` — 18 unit tests covering vowels, consonants, matras, conjuncts, words, mixed text, numerals, edge cases
 
 **Phase 3 deliverable**: Transcription is cleaned up by fast text processing (filler words, self-corrections) and optionally by a local or remote LLM (grammar, formatting). Works with or without LLM enabled.
 

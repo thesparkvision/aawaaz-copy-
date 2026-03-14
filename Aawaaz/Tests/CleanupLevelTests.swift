@@ -275,7 +275,7 @@ final class CleanupLevelTests: XCTestCase {
         let context = InsertionContext.unknown
 
         for level in CleanupLevel.allCases {
-            let output = try await processor.process(rawText: input, context: context, cleanupLevel: level)
+            let output = try await processor.process(rawText: input, context: context, cleanupLevel: level, scriptPreference: nil)
             XCTAssertEqual(output, input, "NoOpProcessor should return input unchanged at \(level.displayName)")
         }
     }

@@ -18,7 +18,8 @@ protocol PostProcessor: Sendable {
     ///   - rawText: Text to process (output of the deterministic pipeline).
     ///   - context: The insertion context describing the target app and field.
     ///   - cleanupLevel: How aggressively to clean up the text.
+    ///   - scriptPreference: Hinglish script preference (romanized/devanagari/mixed), if applicable.
     /// - Returns: Processed text ready for insertion or further processing.
     /// - Throws: If processing fails (callers should fall back to the original text).
-    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel) async throws -> String
+    func process(rawText: String, context: InsertionContext, cleanupLevel: CleanupLevel, scriptPreference: HinglishScript?) async throws -> String
 }

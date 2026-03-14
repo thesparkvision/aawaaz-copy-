@@ -502,7 +502,14 @@ These steps run **after** Whisper and **before** LLM. They are fast, determinist
 
 #### Step 3.3: Local LLM Integration
 
-- [ ] Do not assume Qwen requires `llama.cpp`. Qwen can run locally via multiple runtimes; choose the runtime based on app fit, not model branding.
+- [x] Runtime comparison spike — validated MLX Swift LM for local LLM inference:
+  - [x] MLX Swift LM added as SPM dependency (`mlx-swift-lm` 2.29.1+)
+  - [x] `LLMSpikeRunner.swift` — actor that loads Qwen 3 0.6B-4bit, measures cold start, inference latency, memory, output cleanliness
+  - [x] `LLMSpikeTests.swift` — opt-in XCTest harness (set `RUN_LLM_SPIKE=1` env var), validates timing, filler removal, thinking tag stripping, memory
+  - [x] Thinking tag stripping (`<think>...</think>` + dangling tag handling) working
+  - [x] System prompt tuned for text cleanup (no thinking, no commentary)
+  - [ ] **TODO:** Run spike with real model (requires `RUN_LLM_SPIKE=1`), evaluate results, decide go/no-go on MLX
+  - [ ] **TODO:** If spike passes, move MLX deps from app target to test-only (currently linked in main target for build validation)
 - [ ] Runtime decision:
   - [ ] Primary path: **MLX Swift LM** for Apple-Silicon-only macOS builds (best native Swift integration, official Qwen MLX artifacts, no GGUF conversion requirement)
   - [ ] Fallback path: **llama.cpp** if MLX blocks shipping because of packaging, model support, determinism, or benchmark regressions

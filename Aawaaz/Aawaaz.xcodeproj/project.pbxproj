@@ -43,6 +43,9 @@
 		AA000053 /* SelfCorrectionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100053 /* SelfCorrectionDetector.swift */; };
 		AA000054 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100054 /* PostProcessor.swift */; };
 		AA000055 /* NoOpProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100055 /* NoOpProcessor.swift */; };
+		AA000060 /* LLMSpikeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100060 /* LLMSpikeRunner.swift */; };
+		AA000022 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = AA900030 /* MLXLLM */; };
+		AA000023 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = AA900031 /* MLXLMCommon */; };
 		AAT00001 /* VADStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10001 /* VADStateTests.swift */; };
 		AAT00002 /* HotkeyConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10002 /* HotkeyConfigurationTests.swift */; };
 		AAT00003 /* HotkeyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10003 /* HotkeyManagerTests.swift */; };
@@ -52,6 +55,7 @@
 		AAT00007 /* FillerWordRemoverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10007 /* FillerWordRemoverTests.swift */; };
 		AAT00008 /* SelfCorrectionDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10008 /* SelfCorrectionDetectorTests.swift */; };
 		AAT00009 /* TextProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10009 /* TextProcessorTests.swift */; };
+		AAT00010 /* LLMSpikeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10010 /* LLMSpikeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -93,6 +97,7 @@
 		AA100053 /* SelfCorrectionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfCorrectionDetector.swift; sourceTree = "<group>"; };
 		AA100054 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		AA100055 /* NoOpProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoOpProcessor.swift; sourceTree = "<group>"; };
+		AA100060 /* LLMSpikeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeRunner.swift; sourceTree = "<group>"; };
 		AAT10001 /* VADStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADStateTests.swift; sourceTree = "<group>"; };
 		AAT10002 /* HotkeyConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConfigurationTests.swift; sourceTree = "<group>"; };
 		AAT10003 /* HotkeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManagerTests.swift; sourceTree = "<group>"; };
@@ -102,6 +107,7 @@
 		AAT10007 /* FillerWordRemoverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerWordRemoverTests.swift; sourceTree = "<group>"; };
 		AAT10008 /* SelfCorrectionDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfCorrectionDetectorTests.swift; sourceTree = "<group>"; };
 		AAT10009 /* TextProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessorTests.swift; sourceTree = "<group>"; };
+		AAT10010 /* LLMSpikeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSpikeTests.swift; sourceTree = "<group>"; };
 		AAT10100 /* AawaazTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AawaazTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -112,6 +118,8 @@
 			files = (
 				AA000020 /* onnxruntime in Frameworks */,
 				AA000021 /* whisper in Frameworks */,
+				AA000022 /* MLXLLM in Frameworks */,
+				AA000023 /* MLXLMCommon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +159,7 @@
 				AA300011 /* Permissions */,
 				AA300012 /* TextInsertion */,
 				AA300014 /* TextProcessing */,
+				AA300015 /* LLM */,
 			);
 			name = Aawaaz;
 			sourceTree = "<group>";
@@ -274,6 +283,7 @@
 				AAT10007 /* FillerWordRemoverTests.swift */,
 				AAT10008 /* SelfCorrectionDetectorTests.swift */,
 				AAT10009 /* TextProcessorTests.swift */,
+				AAT10010 /* LLMSpikeTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -289,6 +299,14 @@
 				AA100055 /* NoOpProcessor.swift */,
 			);
 			path = TextProcessing;
+			sourceTree = "<group>";
+		};
+		AA300015 /* LLM */ = {
+			isa = PBXGroup;
+			children = (
+				AA100060 /* LLMSpikeRunner.swift */,
+			);
+			path = LLM;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -310,6 +328,8 @@
 			packageProductDependencies = (
 				AA900010 /* onnxruntime */,
 				AA900020 /* whisper */,
+				AA900030 /* MLXLLM */,
+				AA900031 /* MLXLMCommon */,
 			);
 			productName = Aawaaz;
 			productReference = AA100008 /* Aawaaz.app */;
@@ -381,6 +401,7 @@
 			packageReferences = (
 				AA900001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 				AA900002 /* XCLocalSwiftPackageReference "." */,
+				AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 			);
 			productRefGroup = AA300010 /* Products */;
 			projectDirPath = "";
@@ -441,6 +462,7 @@
 				AA000053 /* SelfCorrectionDetector.swift in Sources */,
 				AA000054 /* PostProcessor.swift in Sources */,
 				AA000055 /* NoOpProcessor.swift in Sources */,
+				AA000060 /* LLMSpikeRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,6 +479,7 @@
 				AAT00007 /* FillerWordRemoverTests.swift in Sources */,
 				AAT00008 /* SelfCorrectionDetectorTests.swift in Sources */,
 				AAT00009 /* TextProcessorTests.swift in Sources */,
+				AAT00010 /* LLMSpikeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -721,6 +744,14 @@
 				minimumVersion = 1.16.0;
 			};
 		};
+		AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.29.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -732,6 +763,16 @@
 		AA900020 /* whisper */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = whisper;
+		};
+		AA900030 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		AA900031 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA900003 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

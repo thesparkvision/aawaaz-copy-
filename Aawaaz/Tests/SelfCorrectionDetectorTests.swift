@@ -324,4 +324,143 @@ final class SelfCorrectionDetectorTests: XCTestCase {
             "it's thursday"
         )
     }
+
+    // MARK: - High-Precision Implicit Correction Markers
+
+    func testOhSorryCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("send it to mark oh sorry to john"),
+            "send it to john"
+        )
+    }
+
+    func testWaitHoldOnCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("call sarah wait hold on call john"),
+            "call john"
+        )
+    }
+
+    func testNoMakeThatCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("I need five no make that six copies"),
+            "I need six copies"
+        )
+    }
+
+    func testOrRatherCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("we should go left or rather right at the intersection"),
+            "we should go right at the intersection"
+        )
+    }
+
+    func testOnSecondThoughtCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("order the pasta hmm on second thought order the salad"),
+            "order the salad"
+        )
+    }
+
+    func testNoWaitCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("the file is in documents no wait it's in downloads"),
+            "the file is in downloads"
+        )
+    }
+
+    func testNahUseCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("set the font to arial nah use helvetica instead"),
+            "set the font to helvetica instead"
+        )
+    }
+
+    func testOopsIMeantCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("reply to mike oops I meant reply to dave"),
+            "reply to dave"
+        )
+    }
+
+    func testCorrectionMarkerCorrection() {
+        XCTAssertEqual(
+            detector.detectAndResolve("the train leaves at eight correction it leaves at nine"),
+            "the train leaves at nine"
+        )
+    }
+
+    // MARK: - Implicit Marker False Positive Prevention
+
+    func testOhSorryForTheDelayIsNotCorrection() {
+        let input = "oh sorry for the delay"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testOhSorryAboutThatIsNotCorrection() {
+        let input = "oh sorry about that"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testOhSorryToInterruptIsNotCorrection() {
+        let input = "oh sorry to interrupt"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testOopsIMeantToCallYouIsNotCorrection() {
+        let input = "oops I meant to call you"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testTheCorrectionWasMinorIsNotCorrection() {
+        let input = "the correction was minor"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testACorrectionIsNeededIsNotCorrection() {
+        let input = "a correction is needed for the report"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testCorrectionWithCopulaIsNotMarker() {
+        // "correction is needed" — copula after "correction" means it's a noun
+        let input = "manual correction is needed"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testOrRatherDoesNotMatchPartially() {
+        // "or" alone should not trigger "or rather"
+        let input = "we can go left or right"
+        XCTAssertEqual(detector.detectAndResolve(input), input)
+    }
+
+    func testNoWaitWithLegitimateFollowUp() {
+        // "no wait" followed by legitimate continuation should still
+        // trigger since "no wait" is a strong correction signal
+        XCTAssertEqual(
+            detector.detectAndResolve("call at three no wait call at four"),
+            "call at four"
+        )
+    }
+
+    func testImplicitMarkerAtSentenceStartIsIgnored() {
+        // Implicit markers without prior content should not trigger
+        let input1 = "on second thought let's cancel"
+        XCTAssertEqual(detector.detectAndResolve(input1), input1)
+
+        let input2 = "wait hold on to the railing"
+        XCTAssertEqual(detector.detectAndResolve(input2), input2)
+
+        let input3 = "no wait for me outside"
+        XCTAssertEqual(detector.detectAndResolve(input3), input3)
+    }
+
+    func testOrRatherWithClauseStarterRepairUsesOverlapMerge() {
+        // "or rather it's tuesday" should fall through to overlap merge,
+        // not force fragment merge (which would produce "the meeting is it's tuesday")
+        XCTAssertEqual(
+            detector.detectAndResolve("the meeting is monday or rather it's tuesday"),
+            "it's tuesday"
+        )
+    }
 }

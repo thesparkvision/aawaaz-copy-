@@ -2,9 +2,9 @@
 
 ## Current State (after Phase 0-1-2 implementation)
 
-The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Current best config: **Qwen 3 0.6B, 0.33s avg latency, ~1 GB RAM**.
+The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **61% exact-match, 79% judge pass rate**. Current best config: **Qwen 3 0.6B, 0.33s avg latency, ~1 GB RAM**.
 
-> **⚠️ Benchmark caveat:** The 50/61% scores likely underrepresent actual quality because the SpokenFormNormalizer code is integrated but the benchmark results appear to be from a run before full integration — spoken-form patterns (slash, colon, dot) are not converting in benchmark output. A clean rerun is required before Phase 3.
+> **Benchmark note:** Phase 2.5 P3 scores (61% exact, 79% judge) are from a clean run with all deterministic layers active. The 79% judge score exceeds the Phase 2.5 target of ~68-72%.
 
 ### What worked
 
@@ -24,7 +24,7 @@ The example-driven prompt redesign moved pass rate from **17% → 47%** on the 1
 
 | Category | Exact | Judge | Root Cause | Fix Approach |
 |---|---|---|---|---|
-| **self-correction-llm** | 0/10 | 0/10 | Implicit corrections ("oh sorry", "no make that") need language understanding or expanded deterministic markers | Add high-precision multi-word triggers to `SelfCorrectionDetector`; defer remaining to better model |
+| **self-correction-llm** | 5/10 | 7/10 | ~~Implicit corrections ("oh sorry", "no make that") need language understanding or expanded deterministic markers~~ **Fixed in Phase 2.5 P3.** 3 remaining: "well actually" (skipped — too ambiguous), LLM capitalization variance | ✅ Mostly done — 7/10 judge (+7 from 0) |
 | **adversarial** | 1/5 | 2/5 | Chat models fundamentally follow instructions. 2/5 rescued by judge as acceptable passthrough | Cadence-Fast immune to injection; accept remaining for LLM |
 | **names-technical** | 4/10 | 6/10 | Tech term capitalization (Kubernetes, AWS); spoken-form edge cases | Whisper prompt conditioning |
 | **hinglish** | 2/10 | 3/10 | Missing punctuation/capitalization on Hinglish text; formatting_quality avg 0.44 | Cadence-Fast (native Hindi support) + Whisper prompt tuning; defer to Phase 4 |
@@ -755,11 +755,11 @@ Application: flag words below confidence threshold (e.g., 0.90) in the LLM promp
 **Goal:** Verify that implemented deterministic layers are actually affecting benchmark outputs, fix cascading correction prefix loss, rescue implicit self-corrections with deterministic markers, and establish a clean baseline before Phase 3.
 
 **Exit criteria for moving to Phase 3:**
-- SpokenFormNormalizer is confirmed working in benchmark traces (path/URL/label-colon cases show conversion)
-- Cascading corrections preserve sentence structure (not just the final word)
+- ✅ SpokenFormNormalizer is confirmed working in benchmark traces (path/URL/label-colon cases show conversion)
+- ✅ Cascading corrections preserve sentence structure (not just the final word)
 - Single-line expectations are aligned with intended behavior
-- Judge score is re-run on fresh results and used as the new baseline
-- Expected judge score after Phase 2.5: **~68-72%**
+- ✅ Judge score is re-run on fresh results and used as the new baseline
+- Expected judge score after Phase 2.5: ~~**~68-72%**~~ → **Actual: 79% (exceeded target by +7-11 points)**
 
 #### Priority 1: Rebaseline SpokenFormNormalizer (S) — ✅ DONE
 
@@ -846,32 +846,80 @@ Per-category changes (exact → judge):
 
 **Known limitation:** When a clause-starter repair has no structural overlap with the before text (e.g., "it's wednesday" correcting "tuesday"), the original prefix is lost. Fixing this would require semantic matching between day names, which is beyond current heuristics. The output is still acceptable ("it's thursday" instead of "the meeting is thursday").
 
-#### Priority 3: Add High-Precision Implicit Self-Correction Markers (M)
+#### Priority 3: Add High-Precision Implicit Self-Correction Markers (M) ✅
 
-10% of the benchmark (self-correction-llm 0/10) fails because the LLM cannot resolve implicit corrections like "oh sorry", "wait hold on", "no make that". A small number of high-precision multi-word triggers added to `SelfCorrectionDetector` can rescue a subset without the false-positive risk of loose single-word triggers.
+**Status: Complete.**
 
-**Safe to add (high-precision, multi-word):**
-- `oh sorry` / `oh sorry,`
-- `wait hold on`
-- `no wait`
-- `no make that`
-- `on second thought`
-- `I meant` / `oops I meant`
-- `correction`
-- `nah use` (before a verb)
-- `or rather` (followed by replacement)
+10% of the benchmark (self-correction-llm 0/10) failed because the LLM cannot resolve implicit corrections like "oh sorry", "wait hold on", "no make that". 9 high-precision multi-word triggers were added to `SelfCorrectionDetector` with extensive false-positive guards.
 
-**Do NOT add (too ambiguous — high false-positive risk):**
-- bare `wait` — "wait for the bus" is not a correction
-- bare `sorry` — "sorry for the delay" is not a correction
-- `well actually` — too common in normal speech
-- `nah` alone — "nah I don't think so" may be content, not correction
+**Markers added (9 total):**
+- `wait hold on` — strong restart signal
+- `no wait` — strong restart signal
+- `on second thought` — unambiguous reconsideration
+- `nah use` — correction before alternative
+- `or rather` — explicit replacement signal (with `biasFragmentMerge`)
+- `no make that` — explicit replacement signal (with `biasFragmentMerge`)
+- `oh sorry` — guarded: rejects apology continuations ("oh sorry for", "oh sorry about", "oh sorry I'm")
+- `oops I meant` — guarded: rejects infinitive ("oops I meant to call")
+- `correction` — guarded: rejects determiner-preceded ("the correction") and copula-followed ("correction is")
 
-- [ ] Add high-precision markers to `SelfCorrectionDetector` as a new tier
-- [ ] Add unit tests for each new trigger with both positive (correction) and negative (non-correction) cases
-- [ ] Run benchmark to measure impact
+**Safety mechanisms:**
+1. **Sentence-start guard** — implicit markers (no punctuation requirement, no standalone restart) at sentence start with no meaningful prior content are rejected to prevent false positives on standalone phrases like "oh sorry to interrupt"
+2. **biasFragmentMerge flag** — forces fragment classification for "or rather" and "no make that" to enable prefix preservation, but skips bias when repair starts with a clause starter to avoid malformed merges
+3. **Per-marker validation** — each ambiguous marker has specific guards against its most common non-correction usages
+4. **Lead-in word expansion** — "hmm", "hm", "oops" added to lead-in set so they're stripped before markers
 
-**Expected impact:** self-correction-llm from 0/10 → ~4-6/10 judge. The remaining 4-6 cases require true language understanding and are deferred to a better model or LFM2.5 evaluation.
+**Intentionally skipped:**
+- `well actually` — too common as discourse filler in normal speech; case 4 remains unsolved
+- bare `I meant` — "I meant to say thank you" has too many non-correction usages
+- bare `correction` without guards — "the correction was minor" is a noun usage
+
+**Changes:**
+- `SelfCorrectionDetector.swift`: Added `biasFragmentMerge` to Marker struct, 9 new markers in `defaultMarkers`, expanded lead-in words, 4 validation guards in `isValidMarkerMatch`, modified `nextMarker` to return Marker object, threaded Marker through `resolveSentence` → `mergeCorrection`
+- `SelfCorrectionDetectorTests.swift`: Added 20 new tests (63 total, was 43) — 9 positive tests for new markers, 11 negative tests for false-positive prevention
+
+- [x] Add high-precision markers to `SelfCorrectionDetector` as a new tier
+- [x] Add unit tests for each new trigger with both positive (correction) and negative (non-correction) cases
+- [x] Oracle pre-implementation design review
+- [x] Oracle post-implementation review + self-review
+- [x] Fix all review findings (sentence-start guard, clause-starter bias fix, expanded validation)
+- [x] Run benchmark to measure impact
+
+**Benchmark results (after Priority 3):**
+
+| Metric | Before Priority 3 | After Priority 3 | Delta |
+|--------|-------------------|-------------------|-------|
+| Exact-match | 56/100 (56%) | 61/100 (61%) | **+5** |
+| Judge pass | 70/100 (70%) | 79/100 (79%) | **+9** |
+| Judge rescued | 14 | 18 | +4 |
+
+Per-category changes (exact → judge):
+| Category | Before | After | Notes |
+|----------|--------|-------|-------|
+| self-correction-llm | 0/10 → 0/10 | 5/10 → 7/10 | **+5 exact, +7 judge** — implicit markers working |
+| self-correction-det | 9/12 → 11/12 | 9/12 → 12/12 | **+1 judge** |
+| cascading-corrections | 4/5 → 5/5 | 4/5 → 5/5 | No change |
+| grammar | 8/12 → 11/12 | 8/12 → 11/12 | No change |
+| fillers | 10/15 → 12/15 | 10/15 → 12/15 | No change |
+| names-technical | 4/10 → 6/10 | 4/10 → 6/10 | No change |
+| adversarial | 1/5 → 2/5 | 1/5 → 3/5 | **+1 judge** |
+| single-line | 2/5 → 4/5 | 2/5 → 4/5 | No change |
+
+**Self-correction-llm case-by-case breakdown:**
+| Case | Input | Exact | Judge | Notes |
+|------|-------|-------|-------|-------|
+| 1 | "send it to mark oh sorry to john" | ✅ | ✅ | `oh sorry` marker + fragment merge |
+| 2 | "call sarah wait hold on call john" | ❌ | ❌ | Deterministic correct, LLM didn't capitalize "john" |
+| 3 | "I need five no make that six copies" | ✅ | ✅ | `no make that` + biasFragmentMerge |
+| 4 | "the budget is ten thousand well actually fifteen thousand" | ❌ | ❌ | `well actually` intentionally skipped |
+| 5 | "we should go left or rather right at the intersection" | ✅ | ✅ | `or rather` + biasFragmentMerge |
+| 6 | "order the pasta hmm on second thought order the salad" | ❌ | ✅ | Deterministic correct, LLM missed period — judge rescued |
+| 7 | "the file is in documents no wait it's in downloads" | ✅ | ✅ | `no wait` + overlap merge |
+| 8 | "set the font to arial nah use helvetica instead" | ❌ | ✅ | Trailing "instead" — judge rescued |
+| 9 | "reply to mike oops I meant reply to dave" | ❌ | ❌ | Deterministic correct, LLM didn't capitalize "dave" |
+| 10 | "the train leaves at seven correction it leaves at nine" | ✅ | ✅ | `correction` marker + overlap merge |
+
+**Expected impact:** ~~self-correction-llm from 0/10 → ~4-6/10 judge~~ → **Actual: 7/10 judge (exceeded prediction). +9 overall judge pass rate.**
 
 #### Priority 4: Finish Single-Line Test Expectation Cleanup (S)
 
@@ -893,7 +941,7 @@ Per-category changes (exact → judge):
 |------|-------------|--------|
 | Broad Hinglish punctuation/capitalization | Phase 4 (Cadence-Fast) | Model-architecture problem — needs bidirectional encoder for reliable punct/caps on Hindi text |
 | General formatting quality improvements | Phase 4 (Cadence-Fast) | formatting_quality avg 0.52 is the worst dimension, but primarily driven by Hinglish and names-tech |
-| Larger model for remaining self-correction-llm | Phase 5 (LFM2.5 eval) | 4-6 cases remaining after deterministic rescue need true language understanding |
+| Larger model for remaining self-correction-llm | Phase 5 (LFM2.5 eval) | 3 cases remaining after deterministic rescue: "well actually" (1), LLM capitalization (2) |
 | Tech-term capitalization (Kubernetes, AWS, NGINX) | Phase 3 (Whisper prompt) | Better solved upstream via Whisper prompt conditioning |
 | "you know" as content vs filler | Future | Context-dependent disambiguation — "you know what I mean like" vs "you know that project" |
 | Filler "like" in embedded positions | Future | Needs syntactic context to distinguish "I like the color" from "we should like go" |
@@ -975,19 +1023,19 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ### Per-Category Progression (Baseline → Current Best)
 
-| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Next Fix |
-|---|---|---|---|---|---|---|---|
-| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
-| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | Filler rules improvement ("like", sentence-start "so") |
-| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | **+1 exact** — selfcorr-det-3 fixed via overlap merge |
-| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
-| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | Whisper prompt conditioning |
-| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | **+3 exact, +3 judge** — prefix preservation fixed ✅ |
-| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | Cadence-Fast immune to injection; accept remaining |
-| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | Add high-precision implicit correction markers (Phase 2.5 Priority 3) |
-| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | Verify SpokenFormNormalizer colon conversion |
+| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Phase 2.5-P3 (exact) | Phase 2.5-P3 (judge) | Next Fix |
+|---|---|---|---|---|---|---|---|---|---|
+| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | 8/12 | 11/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
+| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 12/15 | Filler rules improvement ("like", sentence-start "so") |
+| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | 9/12 | **12/12** | **+1 judge** — all deterministic cases now pass judge ✅ |
+| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 3/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
+| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | 4/10 | 6/10 | Whisper prompt conditioning |
+| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | 4/5 | 5/5 | ✅ Done |
+| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | 1/5 | 3/5 | **+1 judge** |
+| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | **5/10** | **7/10** | **+5 exact, +7 judge** — implicit markers working ✅ |
+| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | 2/5 | 4/5 | Verify SpokenFormNormalizer colon conversion |
 
 ---
 
@@ -1020,7 +1068,7 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 | `Tests/NumberNormalizerTests.swift` | ❌ Not started | Unit tests for number normalizer |
 | `LLM/LocalLLMProcessor.swift` | ✅ Fix 2a done | Capitalize short bypass results |
 | `TextProcessing/TextProcessor.swift` | ✅ Done | SpokenFormNormalizer integrated; Fix 2b capitalization |
-| `TextProcessing/SelfCorrectionDetector.swift` | ✅ Done | Fix 2b capitalization + **prefix preservation fix for cascading corrections** (Phase 2.5 P2) |
+| `TextProcessing/SelfCorrectionDetector.swift` | ✅ Done | Fix 2b capitalization + prefix preservation (Phase 2.5 P2) + **implicit correction markers with biasFragmentMerge, validation guards, sentence-start guard** (Phase 2.5 P3) |
 | `Transcription/TranscriptionPipeline.swift` | ⚠️ Partial | TextProcessor wired in; Whisper prompt conditioning and context injection not yet done |
 | `TextInsertion/InsertionContext.swift` | ❌ Not started | Add `surroundingText` property via AX API |
 | `Models/CadenceFastModel.swift` | ❌ Not started | ONNX/CoreML wrapper for Cadence-Fast inference |
@@ -1042,20 +1090,20 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ## Target Metrics (Revised)
 
-| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5 (target) | Phase 3-4 | Phase 5-6+ |
-|---|---|---|---|---|---|---|
-| Pass rate (exact match) | 47% | **50%** | **56%** | ~62-65% | ~75% | ~80% |
-| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | ~68-72% | ~80-83% | ~85%+ |
-| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.33s | 0.36s (+Cadence) | 0.36s |
-| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
-| Default model | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | TBD (maybe LFM2.5) |
-| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 6 (+Cadence) | 6 |
+| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5-P3 (actual) | Phase 2.5 (target) | Phase 3-4 | Phase 5-6+ |
+|---|---|---|---|---|---|---|---|
+| Pass rate (exact match) | 47% | **50%** | **56%** | **61%** | ~62-65% | ~75% | ~80% |
+| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | **79%** | ~68-72% | ~80-83% | ~85%+ |
+| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.32s | 0.33s | 0.36s (+Cadence) | 0.36s |
+| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
+| Default model | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | TBD (maybe LFM2.5) |
+| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 5 | 6 (+Cadence) | 6 |
 
 ---
 
 ## Architecture: Current vs Target Pipeline
 
-### Current (50% exact / 61% judge)
+### Current (61% exact / 79% judge)
 
 ```
 Whisper → SelfCorrection → FillerRemoval → SpokenFormNorm → LLM (punct+caps+grammar+style) → Insert

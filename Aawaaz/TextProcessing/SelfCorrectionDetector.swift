@@ -23,6 +23,18 @@ struct SelfCorrectionDetector {
         /// Whether this marker can reset prior text when it appears as a
         /// standalone restart clause between sentences.
         let allowsStandaloneRestart: Bool
+        /// When true, the repair text is always treated as a fragment replacement
+        /// that should merge with the preserved prefix. Used for markers like
+        /// "or rather" and "no make that" where the repair is always a
+        /// replacement value.
+        let biasFragmentMerge: Bool
+
+        init(phrase: String, requiresLeadingPunctuation: Bool, allowsStandaloneRestart: Bool, biasFragmentMerge: Bool = false) {
+            self.phrase = phrase
+            self.requiresLeadingPunctuation = requiresLeadingPunctuation
+            self.allowsStandaloneRestart = allowsStandaloneRestart
+            self.biasFragmentMerge = biasFragmentMerge
+        }
     }
 
     private struct WordToken {
@@ -34,6 +46,7 @@ struct SelfCorrectionDetector {
     /// Correction markers, ordered longest-first so multi-word markers
     /// are matched before their substrings.
     static let defaultMarkers: [Marker] = [
+        // Standalone restart markers (no punctuation required, can discard prior text)
         Marker(phrase: "let me start over", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
         Marker(phrase: "let me rephrase", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
         Marker(phrase: "scratch that", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
@@ -45,21 +58,35 @@ struct SelfCorrectionDetector {
         Marker(phrase: "start over", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
         Marker(phrase: "no no no", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
         Marker(phrase: "no no", requiresLeadingPunctuation: false, allowsStandaloneRestart: true),
+
+        // High-precision implicit correction markers (multi-word, no punctuation required)
+        // Must appear before overlapping shorter markers ("wait hold on" before "wait", etc.)
+        Marker(phrase: "oops I meant", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "on second thought", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "wait hold on", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "no make that", requiresLeadingPunctuation: false, allowsStandaloneRestart: false, biasFragmentMerge: true),
+        Marker(phrase: "oh sorry", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "or rather", requiresLeadingPunctuation: false, allowsStandaloneRestart: false, biasFragmentMerge: true),
+        Marker(phrase: "no wait", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "nah use", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+        Marker(phrase: "correction", requiresLeadingPunctuation: false, allowsStandaloneRestart: false),
+
+        // Inline markers (punctuation-gated, higher false-positive risk as bare words)
         Marker(phrase: "I mean", requiresLeadingPunctuation: true, allowsStandaloneRestart: false),
         Marker(phrase: "sorry", requiresLeadingPunctuation: true, allowsStandaloneRestart: false),
         Marker(phrase: "wait", requiresLeadingPunctuation: true, allowsStandaloneRestart: false),
     ]
 
     private static let standaloneLeadInWords: Set<String> = [
-        "oh", "uh", "um", "erm", "well", "so", "sorry",
+        "oh", "uh", "um", "erm", "well", "so", "sorry", "hmm", "hm", "oops",
     ]
 
     private static let trailingLeadInWords: Set<String> = [
-        "oh", "uh", "um", "erm", "well", "so", "sorry",
+        "oh", "uh", "um", "erm", "well", "so", "sorry", "hmm", "hm", "oops",
     ]
 
     private static let repairLeadInWords: Set<String> = [
-        "oh", "uh", "um", "erm", "well", "so",
+        "oh", "uh", "um", "erm", "well", "so", "hmm", "hm", "oops",
     ]
 
     private static let fragmentLeadTokens: Set<String> = [
@@ -260,7 +287,7 @@ struct SelfCorrectionDetector {
         while passes < 8, let match = nextMarker(in: working) {
             let before = String(working[..<match.range.lowerBound])
             let repair = String(working[match.repairStart...])
-            let merged = mergeCorrection(before: before, repair: repair, originalSentence: working)
+            let merged = mergeCorrection(before: before, repair: repair, originalSentence: working, biasFragmentMerge: match.marker.biasFragmentMerge)
 
             if merged == working {
                 break
@@ -273,8 +300,8 @@ struct SelfCorrectionDetector {
         return working
     }
 
-    private func nextMarker(in sentence: String) -> (range: Range<String.Index>, repairStart: String.Index)? {
-        var earliest: (range: Range<String.Index>, repairStart: String.Index)?
+    private func nextMarker(in sentence: String) -> (range: Range<String.Index>, repairStart: String.Index, marker: Marker)? {
+        var earliest: (range: Range<String.Index>, repairStart: String.Index, marker: Marker)?
 
         for marker in Self.defaultMarkers {
             var searchStart = sentence.startIndex
@@ -285,7 +312,7 @@ struct SelfCorrectionDetector {
                     let repairStart = skipSeparatorsAndRepairLeadIn(in: sentence, from: range.upperBound)
                     if repairStart < sentence.endIndex,
                        earliest == nil || range.lowerBound < earliest!.range.lowerBound {
-                        earliest = (range, repairStart)
+                        earliest = (range, repairStart, marker)
                     }
                 }
 
@@ -309,6 +336,68 @@ struct SelfCorrectionDetector {
 
         guard isBoundaryBefore && isBoundaryAfter else { return false }
 
+        // For implicit markers (no punctuation required, no standalone restart),
+        // require meaningful content before the marker to prevent false positives
+        // at sentence start (e.g., "oh sorry to interrupt" as standalone input).
+        if !marker.requiresLeadingPunctuation && !marker.allowsStandaloneRestart {
+            if range.lowerBound == sentence.startIndex {
+                return false
+            }
+            let beforeText = String(sentence[..<range.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let beforeWords = words(in: beforeText)
+            let meaningfulWords = beforeWords.filter { !Self.repairLeadInWords.contains($0.lowercased) }
+            if meaningfulWords.isEmpty {
+                return false
+            }
+        }
+
+        // Marker-specific validation guards
+        switch marker.phrase.lowercased() {
+        case "oh sorry":
+            // Reject if repair starts with apology continuations
+            let afterText = String(sentence[range.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            if afterText.hasPrefix("for ") || afterText.hasPrefix("about ")
+                || afterText.hasPrefix("i'm ") || afterText.hasPrefix("if ")
+                || afterText.hasPrefix("but ") {
+                return false
+            }
+        case "oops i meant":
+            // Reject infinitive continuations: "oops I meant to call you"
+            let afterText = String(sentence[range.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            if afterText.hasPrefix("to ") {
+                return false
+            }
+        case "correction":
+            // Reject noun-phrase usage: "the correction was minor"
+            if range.lowerBound > sentence.startIndex {
+                let beforeText = String(sentence[..<range.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let lastWord = beforeText.split(separator: " ").last.map(String.init)?.lowercased()
+                let determiners: Set<String> = [
+                    "the", "a", "an", "this", "that", "my", "your",
+                    "his", "her", "our", "their", "its",
+                ]
+                if let w = lastWord, determiners.contains(w) {
+                    return false
+                }
+            }
+            // Reject copula-following patterns: "correction is needed", "correction was made"
+            let afterText = String(sentence[range.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            let copulaPrefixes = ["is ", "was ", "were ", "are ", "has ", "had ", "will "]
+            if copulaPrefixes.contains(where: { afterText.hasPrefix($0) }) {
+                return false
+            }
+        default:
+            break
+        }
+
         // For context-dependent markers, require surrounding punctuation
         // to distinguish correction usage from legitimate usage.
         if marker.requiresLeadingPunctuation {
@@ -331,7 +420,7 @@ struct SelfCorrectionDetector {
         return true
     }
 
-    private func mergeCorrection(before: String, repair: String, originalSentence: String) -> String {
+    private func mergeCorrection(before: String, repair: String, originalSentence: String, biasFragmentMerge: Bool = false) -> String {
         let stablePrefix = stripTrailingLeadIn(from: before)
         let normalizedRepair = stripLeadingRepairLeadIn(from: repair)
 
@@ -343,7 +432,16 @@ struct SelfCorrectionDetector {
         let strippedRepair = stripCorrectionIdiom(from: normalizedRepair)
         let idiomWasStripped = strippedRepair != normalizedRepair
 
-        if repairLooksLikeFragment(strippedRepair, before: stablePrefix, fullRepair: normalizedRepair),
+        // biasFragmentMerge forces fragment treatment for replacement-style markers
+        // (e.g., "or rather", "no make that"), but NOT when the repair starts with
+        // a clause starter — those need overlap merge instead to avoid producing
+        // malformed output like "the meeting is it's tuesday".
+        let repairStartsWithClause = words(in: strippedRepair).first.map {
+            Self.fullClauseStarters.contains($0.lowercased)
+        } ?? false
+        let shouldBiasFragment = biasFragmentMerge && !repairStartsWithClause
+
+        if shouldBiasFragment || repairLooksLikeFragment(strippedRepair, before: stablePrefix, fullRepair: normalizedRepair),
            let preservedPrefix = preservedPrefix(for: stablePrefix, repair: strippedRepair, requireStrongAnchor: idiomWasStripped) {
             let stitched = stitch(prefix: preservedPrefix, repair: strippedRepair)
             return normalizedSentenceStart(stitched, basedOn: originalSentence)

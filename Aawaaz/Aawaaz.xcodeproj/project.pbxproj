@@ -69,6 +69,7 @@
 		AAT00012 /* DevanagariTransliteratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10012 /* DevanagariTransliteratorTests.swift */; };
 		AAT00013 /* CleanupQualityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10013 /* CleanupQualityTests.swift */; };
 		AAT00014 /* SpokenFormNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10014 /* SpokenFormNormalizerTests.swift */; };
+		AAT00015 /* LocalLLMProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAT10015 /* LocalLLMProcessorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -133,6 +134,7 @@
 		AAT10012 /* DevanagariTransliteratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevanagariTransliteratorTests.swift; sourceTree = "<group>"; };
 		AAT10013 /* CleanupQualityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupQualityTests.swift; sourceTree = "<group>"; };
 		AAT10014 /* SpokenFormNormalizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenFormNormalizerTests.swift; sourceTree = "<group>"; };
+		AAT10015 /* LocalLLMProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMProcessorTests.swift; sourceTree = "<group>"; };
 		AAT10100 /* AawaazTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AawaazTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -315,6 +317,7 @@
 				AAT10012 /* DevanagariTransliteratorTests.swift */,
 				AAT10013 /* CleanupQualityTests.swift */,
 				AAT10014 /* SpokenFormNormalizerTests.swift */,
+				AAT10015 /* LocalLLMProcessorTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -531,6 +534,7 @@
 				AAT00012 /* DevanagariTransliteratorTests.swift in Sources */,
 				AAT00013 /* CleanupQualityTests.swift in Sources */,
 				AAT00014 /* SpokenFormNormalizerTests.swift in Sources */,
+				AAT00015 /* LocalLLMProcessorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,9 +2,9 @@
 
 ## Current State (after Phase 0-1-2 implementation)
 
-The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **61% exact-match, 79% judge pass rate**. Current best config: **Qwen 3 0.6B, 0.33s avg latency, ~1 GB RAM**.
+The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **64% exact-match, 79% judge pass rate**. Current best config: **Qwen 3 0.6B, 0.31s avg latency, ~1 GB RAM**.
 
-> **Benchmark note:** Phase 2.5 P3 scores (61% exact, 79% judge) are from a clean run with all deterministic layers active. The 79% judge score exceeds the Phase 2.5 target of ~68-72%.
+> **Benchmark note:** Phase 2.5 P4 scores (64% exact, 79% judge) are from a clean run with all deterministic layers active. The 79% judge score exceeds the Phase 2.5 target of ~68-72%.
 
 ### What worked
 
@@ -28,7 +28,7 @@ The example-driven prompt redesign moved pass rate from **17% → 47%** on the 1
 | **adversarial** | 1/5 | 2/5 | Chat models fundamentally follow instructions. 2/5 rescued by judge as acceptable passthrough | Cadence-Fast immune to injection; accept remaining for LLM |
 | **names-technical** | 4/10 | 6/10 | Tech term capitalization (Kubernetes, AWS); spoken-form edge cases | Whisper prompt conditioning |
 | **hinglish** | 2/10 | 3/10 | Missing punctuation/capitalization on Hinglish text; formatting_quality avg 0.44 | Cadence-Fast (native Hindi support) + Whisper prompt tuning; defer to Phase 4 |
-| **single-line** | 2/5 | 4/5 | Minor formatting edge cases | Fix test expectations |
+| **single-line** | 4/5 | 5/5 | ~~Minor formatting edge cases~~ **Fixed in Phase 2.5 P4.** 1 remaining: LLM doesn't capitalize proper noun "John" | ✅ Mostly done — 5/5 judge |
 | **cascading-corrections** | 4/5 | 5/5 | ~~Self-correction detector strips too aggressively~~ **Fixed in Phase 2.5 P2.** 1 remaining case needs semantic matching | ✅ Mostly done |
 | **fillers** | 10/15 | 12/15 | 3 remaining after judge: "like" preserved incorrectly, sentence-start "so" not removed | Improve filler removal rules |
 | **self-correction-det** | 9/12 | 11/12 | ~~Prefix loss in some corrections~~ **Mostly fixed in Phase 2.5 P2.** 3 remaining need LLM-level understanding | Overlap merge improved; remaining deferred |
@@ -299,11 +299,11 @@ if wordCount < 4 {
 
 **Fix:** Implemented in `TextProcessor.swift:37-50` + `SelfCorrectionDetector.swift:165-167`. If the entire result was produced by self-correction (≤50% of input words remain), capitalizes the first character in non-code/terminal contexts.
 
-#### Fix 2c: Improve test expectations for single-line ⚠️ PARTIAL
+#### Fix 2c: Improve test expectations for single-line ✅ DONE
 
 **Problem:** 5/5 single-line cases fail because the model adds a period (correct behavior for dictation cleanup) but tests expect no period. Also, "colon" is not converted to `:`.
 
-**Fix:** Trailing period expectations have been updated. The `colon` issue depends on SpokenFormNormalizer integration verification (see Phase 2.5). Current results: 3/5 exact match, 3/5 judge pass.
+**Fix:** Trailing period expectations updated. Colon conversion implemented in SpokenFormNormalizer and verified working. Post-LLM first-letter capitalization added to `LocalLLMProcessor.capitalizeStartIfAppropriate()`. Post-colon capitalization added for sentence-start labels in SpokenFormNormalizer. Current results: 4/5 exact match, 5/5 judge pass.
 
 ---
 
@@ -757,7 +757,7 @@ Application: flag words below confidence threshold (e.g., 0.90) in the LLM promp
 **Exit criteria for moving to Phase 3:**
 - ✅ SpokenFormNormalizer is confirmed working in benchmark traces (path/URL/label-colon cases show conversion)
 - ✅ Cascading corrections preserve sentence structure (not just the final word)
-- Single-line expectations are aligned with intended behavior
+- ✅ Single-line expectations are aligned with intended behavior
 - ✅ Judge score is re-run on fresh results and used as the new baseline
 - Expected judge score after Phase 2.5: ~~**~68-72%**~~ → **Actual: 79% (exceeded target by +7-11 points)**
 
@@ -921,11 +921,62 @@ Per-category changes (exact → judge):
 
 **Expected impact:** ~~self-correction-llm from 0/10 → ~4-6/10 judge~~ → **Actual: 7/10 judge (exceeded prediction). +9 overall judge pass rate.**
 
-#### Priority 4: Finish Single-Line Test Expectation Cleanup (S)
+#### Priority 4: Finish Single-Line Test Expectation Cleanup (S) ✅
 
-- [ ] Review remaining single-line test expectations for consistency
-- [ ] Ensure all 5 single-line cases have aligned expectations (trailing periods, colon conversion)
-- [ ] Verify Fix 2c is fully applied after SpokenFormNormalizer verification
+**Status: Complete.**
+
+Two deterministic fixes were added to address single-line test failures plus LLM judge parser was updated to support the current verbose test output format:
+
+1. **Post-LLM first-letter capitalization** — `LocalLLMProcessor.capitalizeStartIfAppropriate()` ensures the first letter of LLM output is capitalized in non-code/terminal contexts. Guards against false capitalization of URLs (`http://`, `https://`, `www.`), emails, paths (`/`, `~/`), CLI flags (`-`, `--`), and handles (`@`). Applied to both the short-input bypass and main LLM processing paths.
+
+2. **Post-colon capitalization for sentence-start labels** — `SpokenFormNormalizer.normalizeLabelColons()` now capitalizes the first word after the colon for labels that start a new phrase (re, subject, bug report, note, warning, todo, etc.). Excludes value-follower labels (from, to, cc, bcc, date, input, output, result) where the next word may be an email, data value, or identifier. Also guards against capitalizing URLs/emails/paths/flags after colons.
+
+3. **LLM judge parser update** — `scripts/llm_judge.py` `parse_benchmark_results()` now supports both the compact format (`[id] ✅ 0.30s`) and the current verbose format (`━━━ [id] Category: ...` with `AFTER LLM:` and `RESULT:` lines).
+
+**Changes:**
+- `LocalLLMProcessor.swift`: Added `capitalizeStartIfAppropriate()` static method, called after LLM processing and in short-input bypass path
+- `SpokenFormNormalizer.swift`: Added `sentenceStartLabels` set, refactored `normalizeLabelColons()` to capitalize after sentence-start labels with single-pass regex replacement (no stale index issues)
+- `LocalLLMProcessorTests.swift`: New file — 12 tests for capitalization guard edge cases (URLs, emails, paths, flags, handles, code/terminal contexts)
+- `SpokenFormNormalizerTests.swift`: Updated 3 existing tests, added 2 new test methods (9 assertions for value-follower and sentence-start label behavior)
+- `scripts/llm_judge.py`: Updated parser to handle verbose benchmark output format
+
+- [x] Add post-LLM first-letter capitalization guard
+- [x] Add post-colon capitalization for sentence-start labels
+- [x] Update SpokenFormNormalizer tests for new behavior
+- [x] Add LocalLLMProcessor tests for capitalization guards
+- [x] Oracle pre-implementation design review
+- [x] Oracle post-implementation review + self-review
+- [x] Fix review findings (short-input path, stale index, www. guard)
+- [x] Fix LLM judge parser for current output format
+- [x] Run benchmarks to measure impact
+
+**Benchmark results (after Priority 4):**
+
+| Metric | Before Priority 4 | After Priority 4 | Delta |
+|--------|-------------------|-------------------|-------|
+| Exact-match | 61/100 (61%) | 64/100 (64%) | **+3** |
+| Judge pass | 79/100 (79%) | 79/100 (79%) | 0 |
+| Judge rescued | 18 | 15 | -3 (more exact matches need fewer rescues) |
+
+Per-category changes (exact → judge):
+| Category | Before | After | Notes |
+|----------|--------|-------|-------|
+| single-line | 2/5 → 4/5 | 4/5 → 5/5 | **+2 exact, +1 judge** — capitalization fixes working |
+| names-technical | 4/10 → 6/10 | 5/10 → 7/10 | **+1 exact, +1 judge** — post-LLM capitalization helped |
+| self-correction-det | 9/12 → 12/12 | 9/12 → 12/12 | No change |
+| cascading-corrections | 4/5 → 5/5 | 4/5 → 5/5 | No change |
+| self-correction-llm | 5/10 → 7/10 | 5/10 → 7/10 | No change |
+| grammar | 8/12 → 11/12 | 8/12 → 9/12 | -2 judge (LLM variance) |
+| fillers | 10/15 → 12/15 | 10/15 → 11/15 | -1 judge (LLM variance) |
+
+**Single-line case-by-case breakdown:**
+| Case | Input | Exact | Judge | Notes |
+|------|-------|-------|-------|-------|
+| 1 | "this is a subject line for an email..." | ✅ | ✅ | Post-LLM capitalization fixed start |
+| 2 | "meeting with john tomorrow at 3pm" | ❌ | ✅ | First letter now capitalized; "John" and "3pm" spacing remain LLM issues |
+| 3 | "re colon um project update for q4" | ✅ | ✅ | Post-colon capitalization fixed "Project" |
+| 4 | "search for best restaurants near me" | ✅ | ✅ | Was already passing |
+| 5 | "um bug report colon app crashes on startup" | ✅ | ✅ | Was already passing |
 
 #### Priority 5: NumberNormalizer — Decide Scope (M-L)
 
@@ -1007,6 +1058,7 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 | Step 4-5 final | Qwen 3 1.7B | Example-driven | 46/100 (46%) | — | 0.57s | +29 |
 | Step 4-5 final | Qwen 3.5 0.8B | Example-driven | 29/100 (29%) | — | 2.66s | +12 |
 | **Phase 0-1-2** | **Qwen 3 0.6B** | **Example-driven + Fix 2a/2b** | **50/100 (50%)** | **61/100 (61%)** | **0.33s** | **+33 exact, judge baseline** |
+| **Phase 2.5-P4** | **Qwen 3 0.6B** | **+ post-LLM capitalization + post-colon cap** | **64/100 (64%)** | **79/100 (79%)** | **0.31s** | **+47 exact, +18 judge** |
 
 ### Multi-Model Comparison (old prompt, Step 0 style)
 
@@ -1023,19 +1075,19 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ### Per-Category Progression (Baseline → Current Best)
 
-| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Phase 2.5-P3 (exact) | Phase 2.5-P3 (judge) | Next Fix |
-|---|---|---|---|---|---|---|---|---|---|
-| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | 8/12 | 11/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
-| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 12/15 | Filler rules improvement ("like", sentence-start "so") |
-| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | 9/12 | **12/12** | **+1 judge** — all deterministic cases now pass judge ✅ |
-| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 3/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
-| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | 4/10 | 6/10 | Whisper prompt conditioning |
-| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | 4/5 | 5/5 | ✅ Done |
-| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | 1/5 | 3/5 | **+1 judge** |
-| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | **5/10** | **7/10** | **+5 exact, +7 judge** — implicit markers working ✅ |
-| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | 2/5 | 4/5 | Verify SpokenFormNormalizer colon conversion |
+| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Phase 2.5-P3 (exact) | Phase 2.5-P3 (judge) | Phase 2.5-P4 (exact) | Phase 2.5-P4 (judge) | Next Fix |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | 8/12 | 11/12 | 8/12 | 9/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
+| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 11/15 | Filler rules improvement ("like", sentence-start "so") |
+| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | 9/12 | **12/12** | 9/12 | **12/12** | ✅ Done |
+| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 5/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
+| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | 4/10 | 6/10 | **5/10** | **7/10** | **+1 exact, +1 judge** — post-LLM capitalization helped |
+| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | 4/5 | 5/5 | 4/5 | 5/5 | ✅ Done |
+| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | 1/5 | 3/5 | 1/5 | 2/5 | Accept remaining for LLM; Cadence-Fast immune |
+| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | **5/10** | **7/10** | 5/10 | 7/10 | 3 remaining need larger model or "well actually" |
+| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | 2/5 | 4/5 | **4/5** | **5/5** | **+2 exact, +1 judge** — ✅ Done |
 
 ---
 
@@ -1055,6 +1107,7 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 12. **Benchmark harness must match pipeline stages.** When the pipeline adds stages (SpokenFormNormalizer), the benchmark trace labels and pipeline steps must be updated to match. Stale benchmarks create diagnostic confusion.
 13. **Cascading self-corrections need prefix preservation.** The current greedy approach to multiple corrections in one utterance loses sentence structure. Each correction should replace only the corrected segment, not discard the stable prefix.
 14. **Implicit self-corrections are partially deterministic.** While "oh sorry", "wait hold on", and "no make that" look like they need LLM understanding, they're actually high-precision deterministic triggers. The boundary between deterministic and LLM-required is further out than initially assumed.
+15. **Post-LLM deterministic guards catch reliable model weaknesses.** Small models consistently miss sentence-start capitalization. A deterministic guard after LLM output is safe, effective, and costs nothing — fixing 3 cases in this instance. Guard against known non-prose patterns (URLs, emails, paths, flags) to avoid false positives.
 
 ---
 
@@ -1064,19 +1117,20 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 |---|---|---|
 | `TextProcessing/SpokenFormNormalizer.swift` | ✅ Done | Deterministic spoken-form → symbol conversion (365 lines, all patterns) |
 | `TextProcessing/NumberNormalizer.swift` | ❌ Not started | Number/date/time inverse text normalization |
-| `Tests/SpokenFormNormalizerTests.swift` | ✅ Done | 24 unit tests covering all pattern types |
+| `Tests/SpokenFormNormalizerTests.swift` | ✅ Done | 36 unit tests covering all pattern types + post-colon capitalization |
 | `Tests/NumberNormalizerTests.swift` | ❌ Not started | Unit tests for number normalizer |
-| `LLM/LocalLLMProcessor.swift` | ✅ Fix 2a done | Capitalize short bypass results |
+| `LLM/LocalLLMProcessor.swift` | ✅ Done | Capitalize short bypass results (Fix 2a) + **post-LLM first-letter capitalization guard** (Phase 2.5 P4) |
 | `TextProcessing/TextProcessor.swift` | ✅ Done | SpokenFormNormalizer integrated; Fix 2b capitalization |
 | `TextProcessing/SelfCorrectionDetector.swift` | ✅ Done | Fix 2b capitalization + prefix preservation (Phase 2.5 P2) + **implicit correction markers with biasFragmentMerge, validation guards, sentence-start guard** (Phase 2.5 P3) |
 | `Transcription/TranscriptionPipeline.swift` | ⚠️ Partial | TextProcessor wired in; Whisper prompt conditioning and context injection not yet done |
 | `TextInsertion/InsertionContext.swift` | ❌ Not started | Add `surroundingText` property via AX API |
 | `Models/CadenceFastModel.swift` | ❌ Not started | ONNX/CoreML wrapper for Cadence-Fast inference |
 | `LLM/LLMModelCatalog.swift` | ❌ Not started | Add LFM2.5-1.2B-Instruct entry |
-| `Tests/CleanupQualityTests.swift` | ⚠️ Needs update | Fix 2c partially applied; **needs per-stage trace update** |
+| `Tests/CleanupQualityTests.swift` | ✅ Done | Fix 2c fully applied; per-stage trace working |
+| `Tests/LocalLLMProcessorTests.swift` | ✅ Done | **New file** — 12 unit tests for post-LLM capitalization guard (Phase 2.5 P4) |
 | `Persistence/CorrectionStore.swift` | ❌ Not started | SQLite storage for user correction pairs |
 | `TextProcessing/UserStylePreferences.swift` | ❌ Not started | User-specific formatting overrides |
-| `scripts/llm_judge.py` | ✅ Done | LLM-as-Judge evaluation script (645 lines, Gemini scoring) |
+| `scripts/llm_judge.py` | ✅ Done | LLM-as-Judge evaluation script — supports both compact and verbose benchmark output formats |
 | `Transcription/TranscriptionPipeline.swift` | Wire normalizers + Cadence-Fast into post-processing; add Whisper prompt conditioning |
 | `TextInsertion/InsertionContext.swift` | Add `surroundingText` property via AX API |
 | `Models/CadenceFastModel.swift` | **New file** — ONNX/CoreML wrapper for Cadence-Fast inference |
@@ -1090,20 +1144,20 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ## Target Metrics (Revised)
 
-| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5-P3 (actual) | Phase 2.5 (target) | Phase 3-4 | Phase 5-6+ |
-|---|---|---|---|---|---|---|---|
-| Pass rate (exact match) | 47% | **50%** | **56%** | **61%** | ~62-65% | ~75% | ~80% |
-| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | **79%** | ~68-72% | ~80-83% | ~85%+ |
-| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.32s | 0.33s | 0.36s (+Cadence) | 0.36s |
-| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
-| Default model | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | TBD (maybe LFM2.5) |
-| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 5 | 6 (+Cadence) | 6 |
+| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5-P3 (actual) | Phase 2.5-P4 (actual) | Phase 2.5 (target) | Phase 3-4 | Phase 5-6+ |
+|---|---|---|---|---|---|---|---|---|
+| Pass rate (exact match) | 47% | **50%** | **56%** | **61%** | **64%** | ~62-65% | ~75% | ~80% |
+| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | **79%** | **79%** | ~68-72% | ~80-83% | ~85%+ |
+| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.32s | 0.31s | 0.33s | 0.36s (+Cadence) | 0.36s |
+| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
+| Default model | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | TBD (maybe LFM2.5) |
+| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 5 | 5 | 6 (+Cadence) | 6 |
 
 ---
 
 ## Architecture: Current vs Target Pipeline
 
-### Current (61% exact / 79% judge)
+### Current (64% exact / 79% judge)
 
 ```
 Whisper → SelfCorrection → FillerRemoval → SpokenFormNorm → LLM (punct+caps+grammar+style) → Insert

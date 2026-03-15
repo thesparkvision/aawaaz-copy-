@@ -71,14 +71,11 @@ actor LocalLLMProcessor: PostProcessor {
         }
 
         // Very short inputs: deterministic cleanup is sufficient.
-        // Still capitalize the first letter for proper sentence presentation.
+        // Capitalize the first letter for proper sentence presentation,
+        // with guards against URLs, emails, paths, etc.
         let wordCount = trimmed.split(whereSeparator: \.isWhitespace).count
         if wordCount < 4 {
-            var result = trimmed
-            if let first = result.first, first.isLowercase {
-                result = first.uppercased() + result.dropFirst()
-            }
-            return result
+            return Self.capitalizeStartIfAppropriate(trimmed, context: context)
         }
 
         let container = try await ensureModelLoaded()
@@ -109,7 +106,37 @@ actor LocalLLMProcessor: PostProcessor {
             return rawText
         }
 
+        // Ensure first letter is capitalized for prose contexts.
+        // Small models sometimes miss sentence-start capitalization.
+        // Skip for code/terminal (already bypassed above) and non-prose starts.
+        cleaned = Self.capitalizeStartIfAppropriate(cleaned, context: context)
+
         return cleaned
+    }
+
+    /// Capitalize the first letter if the output looks like prose in a non-code context.
+    ///
+    /// Guards against false capitalization of URLs, emails, paths, CLI flags,
+    /// and handles (e.g. `@username`). These patterns should stay lowercase.
+    static func capitalizeStartIfAppropriate(_ text: String, context: InsertionContext) -> String {
+        guard context.appCategory != .code, context.appCategory != .terminal else {
+            return text
+        }
+        guard let first = text.first, first.isLowercase else { return text }
+
+        let firstWord = String(text.prefix(while: { !$0.isWhitespace }))
+
+        // Don't capitalize URLs, emails, paths, flags, or handles
+        if firstWord.hasPrefix("http://") || firstWord.hasPrefix("https://") ||
+            firstWord.hasPrefix("www.") ||
+            firstWord.hasPrefix("/") || firstWord.hasPrefix("~/") ||
+            firstWord.hasPrefix("--") || firstWord.hasPrefix("-") ||
+            firstWord.hasPrefix("@") ||
+            firstWord.contains("@") && firstWord.contains(".") {
+            return text
+        }
+
+        return first.uppercased() + text.dropFirst()
     }
 
     // MARK: - Model Lifecycle

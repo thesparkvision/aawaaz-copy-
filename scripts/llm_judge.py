@@ -130,6 +130,10 @@ def extract_test_cases_from_swift(swift_path: str) -> list[TestCase]:
 def parse_benchmark_results(results_path: str, model_name: str = "Qwen3-0.6B-6bit") -> dict[str, str]:
     """Parse benchmark output file to extract actual outputs for a specific model.
 
+    Supports two formats:
+    1. Compact: [case-id] ✅ 0.30s  /  [case-id] ❌ 0.30s got: "..."
+    2. Verbose: ━━━ [case-id] Category: ... ━━━  with AFTER LLM and RESULT lines
+
     Returns a dict mapping test case ID → actual output string.
     """
     with open(results_path, "r") as f:
@@ -138,9 +142,39 @@ def parse_benchmark_results(results_path: str, model_name: str = "Qwen3-0.6B-6bi
     actuals: dict[str, str] = {}
     found_results = False
 
+    # Try verbose format first (current test output format)
+    current_id = None
+    current_actual = None
+
     for line in lines:
         stripped = line.strip()
 
+        # Verbose format: ━━━ [case-id] Category: ... ━━━
+        m_header = re.match(r'━━━\s*\[([^\]]+)\]\s*Category:', stripped)
+        if m_header:
+            current_id = m_header.group(1)
+            current_actual = None
+            continue
+
+        # Verbose format: AFTER LLM: "actual output"
+        if current_id and stripped.startswith('AFTER LLM:'):
+            m_actual = re.match(r'AFTER LLM:\s*"(.*)"$', stripped)
+            if m_actual:
+                current_actual = m_actual.group(1)
+            continue
+
+        # Verbose format: RESULT: ✅ PASS / ❌ FAIL
+        if current_id and 'RESULT:' in stripped:
+            found_results = True
+            if '✅' in stripped and current_actual is not None:
+                actuals[current_id] = "__EXACT_MATCH__"
+            elif '❌' in stripped and current_actual is not None:
+                actuals[current_id] = current_actual
+            current_id = None
+            current_actual = None
+            continue
+
+        # Compact format: [case-id] ✅
         m_pass = re.match(r'\[([^\]]+)\]\s*✅', stripped)
         m_fail = re.match(r'\[([^\]]+)\]\s*❌\s*[\d.]+s\s+got:\s*"(.*)"$', stripped)
 

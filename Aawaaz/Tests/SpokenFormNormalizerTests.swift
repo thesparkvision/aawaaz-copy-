@@ -163,21 +163,21 @@ final class SpokenFormNormalizerTests: XCTestCase {
     func testReColon() {
         XCTAssertEqual(
             SpokenFormNormalizer.normalize("re colon project update"),
-            "Re: project update"
+            "Re: Project update"
         )
     }
 
     func testBugReportColon() {
         XCTAssertEqual(
             SpokenFormNormalizer.normalize("bug report colon app crashes"),
-            "Bug report: app crashes"
+            "Bug report: App crashes"
         )
     }
 
     func testSubjectColon() {
         XCTAssertEqual(
             SpokenFormNormalizer.normalize("subject colon meeting tomorrow"),
-            "Subject: meeting tomorrow"
+            "Subject: Meeting tomorrow"
         )
     }
 
@@ -185,6 +185,50 @@ final class SpokenFormNormalizerTests: XCTestCase {
         // "colon" after a non-label word should stay as "colon"
         let input = "the colon is part of the body"
         XCTAssertEqual(SpokenFormNormalizer.normalize(input), input)
+    }
+
+    func testValueFollowerLabelColonNoCapitalize() {
+        // Value-follower labels (from, to, cc, etc.) should NOT capitalize the next word
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("from colon john at example dot com"),
+            "From: john@example.com"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("to colon admin"),
+            "To: admin"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("cc colon team"),
+            "Cc: team"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("input colon foo_bar"),
+            "Input: foo_bar"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("output colon next dot js"),
+            "Output: next.js"
+        )
+    }
+
+    func testSentenceStartLabelColonCapitalizes() {
+        // Sentence-start labels should capitalize the next word
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("note colon remember to check"),
+            "Note: Remember to check"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("warning colon do not delete"),
+            "Warning: Do not delete"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("todo colon fix the bug"),
+            "Todo: Fix the bug"
+        )
+        XCTAssertEqual(
+            SpokenFormNormalizer.normalize("step colon open the file"),
+            "Step: Open the file"
+        )
     }
 
     // MARK: - Command Patterns

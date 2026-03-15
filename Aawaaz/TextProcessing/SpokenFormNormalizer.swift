@@ -294,13 +294,25 @@ struct SpokenFormNormalizer {
         "action", "action item", "title", "description",
     ]
 
+    /// Labels where the following text starts a new phrase and should be capitalized.
+    /// Excludes value-follower labels (from, to, cc, bcc, date, input, output, result)
+    /// where the next word may be an email, data value, or identifier.
+    private static let sentenceStartLabels: Set<String> = [
+        "re", "subject", "bug", "bug report", "feature", "feature request",
+        "todo", "note", "warning", "error", "info", "important", "regarding",
+        "step", "example", "summary",
+        "action", "action item", "title", "description",
+    ]
+
     /// Normalize "colon" to ":" after label words.
     ///
-    /// `"re colon project update"` → `"Re: project update"`
-    /// `"bug report colon app crashes"` → `"Bug report: app crashes"`
+    /// `"re colon project update"` → `"Re: Project update"`
+    /// `"bug report colon app crashes"` → `"Bug report: App crashes"`
+    ///
+    /// For sentence-start labels, the first word after the colon is also capitalized.
     private static func normalizeLabelColons(_ text: String) -> String {
-        // Match: (label word(s)) colon
-        let pattern = "\\b(\\w+(?:\\s+\\w+)?)\\s+colon\\b"
+        // Match: (label word(s)) colon (optionally followed by a word to capitalize)
+        let pattern = "\\b(\\w+(?:\\s+\\w+)?)\\s+colon(?:\\s+(\\S+))?"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return text
         }
@@ -313,10 +325,31 @@ struct SpokenFormNormalizer {
                   let labelRange = Range(match.range(at: 1), in: result) else { continue }
 
             let label = String(result[labelRange])
-            if labelWords.contains(label.lowercased()) {
-                let capitalizedLabel = label.prefix(1).uppercased() + label.dropFirst()
-                let replacement = "\(capitalizedLabel):"
-                result.replaceSubrange(fullRange, with: replacement)
+            guard labelWords.contains(label.lowercased()) else { continue }
+
+            let capitalizedLabel = label.prefix(1).uppercased() + label.dropFirst()
+
+            // Check if there's a captured word after "colon"
+            if match.range(at: 2).location != NSNotFound,
+               let nextWordRange = Range(match.range(at: 2), in: result) {
+                let nextWord = String(result[nextWordRange])
+
+                if sentenceStartLabels.contains(label.lowercased()) {
+                    // Don't capitalize if next word looks like email/URL/path/flag
+                    let shouldSkip = nextWord.contains("@") || nextWord.hasPrefix("/") ||
+                        nextWord.hasPrefix("http") || nextWord.hasPrefix("www.") ||
+                        nextWord.hasPrefix("--")
+                    if !shouldSkip, let firstChar = nextWord.first, firstChar.isLowercase {
+                        let capitalizedNext = firstChar.uppercased() + nextWord.dropFirst()
+                        result.replaceSubrange(fullRange, with: "\(capitalizedLabel): \(capitalizedNext)")
+                    } else {
+                        result.replaceSubrange(fullRange, with: "\(capitalizedLabel): \(nextWord)")
+                    }
+                } else {
+                    result.replaceSubrange(fullRange, with: "\(capitalizedLabel): \(nextWord)")
+                }
+            } else {
+                result.replaceSubrange(fullRange, with: "\(capitalizedLabel):")
             }
         }
 

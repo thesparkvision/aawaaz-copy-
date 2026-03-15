@@ -48,7 +48,3 @@ docs/
 ├── SPEC.md         # Product specification
 └── PLAN.md         # Architecture & implementation plan
 ```
-
-## License
-
-Private — not yet licensed for distribution.

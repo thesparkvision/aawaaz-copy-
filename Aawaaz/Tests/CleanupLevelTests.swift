@@ -84,14 +84,14 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .light)
 
-        XCTAssert(prompt.contains("Fix grammar and punctuation"), "Light prompt should fix grammar")
+        XCTAssert(prompt.contains("Fix small grammar mistakes"), "Light prompt should fix grammar")
     }
 
     func testLightPromptDoesNotRemoveFillers() {
         let context = InsertionContext.unknown
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .light)
 
-        XCTAssert(prompt.contains("Do NOT remove any words"), "Light prompt should keep fillers")
+        XCTAssert(prompt.contains("Keep all words the same"), "Light prompt should keep all words unchanged")
     }
 
     func testLightPromptHasNoCategoryInstruction() {
@@ -102,14 +102,15 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .light)
 
-        XCTAssertFalse(prompt.contains("Format for chat"), "Light prompt should not include category formatting")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Light prompt for chat should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Light prompt for chat should not include terminal instructions")
     }
 
     func testLightPromptPreservesHindiEnglish() {
         let context = InsertionContext.unknown
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .light)
 
-        XCTAssert(prompt.contains("Hindi and English"), "Light prompt should mention Hindi/English")
+        XCTAssert(prompt.contains("Hindi-English"), "Light prompt should mention Hindi-English")
     }
 
     // MARK: - Prompt Construction: Medium Level
@@ -118,17 +119,16 @@ final class CleanupLevelTests: XCTestCase {
         let context = InsertionContext.unknown
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .medium)
 
-        XCTAssert(prompt.contains("Improve sentence structure"), "Medium prompt should improve structure")
-        XCTAssert(prompt.contains("capitalization"), "Medium prompt should fix capitalization")
+        XCTAssert(prompt.contains("split run-on sentences"), "Medium prompt should allow splitting run-on sentences")
+        XCTAssert(prompt.contains("Capitalize"), "Medium prompt should fix capitalization")
     }
 
-    func testMediumPromptHandlesSelfCorrections() {
+    func testMediumPromptAllowsMoreLatitudeThanLight() {
         let context = InsertionContext.unknown
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .medium)
 
-        XCTAssert(prompt.contains("corrects themselves"), "Medium prompt should handle self-corrections")
-        XCTAssert(prompt.contains("smallest possible edit"), "Medium prompt should prefer minimal rewrites")
-        XCTAssert(prompt.contains("stable prefix intact"), "Medium prompt should preserve stable prefix")
+        XCTAssertFalse(prompt.contains("Keep all words the same"), "Medium prompt should not restrict to keeping all words")
+        XCTAssert(prompt.contains("Keep the same meaning"), "Medium prompt should preserve meaning")
     }
 
     func testMediumPromptHasNoCategoryInstruction() {
@@ -139,20 +139,21 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .medium)
 
-        XCTAssertFalse(prompt.contains("Format for email"), "Medium prompt should not include category formatting")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Medium prompt for email should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Medium prompt for email should not include terminal instructions")
     }
 
     // MARK: - Prompt Construction: Full Level
 
-    func testFullPromptRemovesFillers() {
+    func testFullPromptAllowsRewriteForClarity() {
         let context = InsertionContext.unknown
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Remove obvious filler words"), "Full prompt should remove fillers")
-        XCTAssert(prompt.contains("smallest possible edit"), "Full prompt should prefer minimal rewrites")
+        XCTAssert(prompt.contains("small rewrite only if needed for clarity"), "Full prompt should allow rewrites for clarity")
+        XCTAssertFalse(prompt.contains("Keep all words the same"), "Full prompt should not restrict to keeping all words")
     }
 
-    func testFullPromptIncludesCategoryForEmail() {
+    func testFullPromptHasNoSpecialInstructionsForEmail() {
         let context = InsertionContext(
             appName: "Mail",
             bundleIdentifier: "com.apple.mail",
@@ -160,11 +161,12 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format for email"), "Full prompt should include email formatting")
-        XCTAssert(prompt.contains("professional tone"), "Full prompt should mention professional tone for email")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Full prompt for email should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Full prompt for email should not include terminal instructions")
+        XCTAssert(prompt.contains("Fix small grammar mistakes"), "Full prompt for email should include base cleanup")
     }
 
-    func testFullPromptIncludesCategoryForChat() {
+    func testFullPromptHasNoSpecialInstructionsForChat() {
         let context = InsertionContext(
             appName: "Slack",
             bundleIdentifier: "com.tinyspeck.slackmacgap",
@@ -172,11 +174,12 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format for chat"), "Full prompt should include chat formatting")
-        XCTAssert(prompt.contains("casual tone"), "Full prompt should mention casual tone for chat")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Full prompt for chat should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Full prompt for chat should not include terminal instructions")
+        XCTAssert(prompt.contains("Fix small grammar mistakes"), "Full prompt for chat should include base cleanup")
     }
 
-    func testFullPromptIncludesCategoryForCode() {
+    func testFullPromptIncludesCodeInstructions() {
         let context = InsertionContext(
             appName: "Xcode",
             bundleIdentifier: "com.apple.dt.Xcode",
@@ -184,11 +187,11 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format for code editor"), "Full prompt should include code formatting")
-        XCTAssert(prompt.contains("preserve code"), "Full prompt should preserve code in code editors")
+        XCTAssert(prompt.contains("Keep code, symbols, filenames, APIs, and identifiers exact"), "Full prompt should preserve code identifiers")
+        XCTAssert(prompt.contains("Only clean surrounding prose"), "Full prompt should limit cleanup to prose in code editors")
     }
 
-    func testFullPromptIncludesCategoryForTerminal() {
+    func testFullPromptIncludesTerminalInstructions() {
         let context = InsertionContext(
             appName: "Terminal",
             bundleIdentifier: "com.apple.Terminal",
@@ -196,11 +199,11 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format for terminal"), "Full prompt should include terminal formatting")
-        XCTAssert(prompt.contains("preserve commands"), "Full prompt should preserve commands in terminal")
+        XCTAssert(prompt.contains("Keep commands, flags, paths, and casing exact"), "Full prompt should preserve terminal commands")
+        XCTAssert(prompt.contains("Only clean surrounding prose"), "Full prompt should limit cleanup to prose in terminal")
     }
 
-    func testFullPromptIncludesCategoryForDocument() {
+    func testFullPromptHasNoSpecialInstructionsForDocument() {
         let context = InsertionContext(
             appName: "Pages",
             bundleIdentifier: "com.apple.iWork.Pages",
@@ -208,10 +211,12 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format for document"), "Full prompt should include document formatting")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Full prompt for document should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Full prompt for document should not include terminal instructions")
+        XCTAssert(prompt.contains("Fix small grammar mistakes"), "Full prompt for document should include base cleanup")
     }
 
-    func testFullPromptFallsBackForBrowser() {
+    func testFullPromptHasNoSpecialInstructionsForBrowser() {
         let context = InsertionContext(
             appName: "Safari",
             bundleIdentifier: "com.apple.Safari",
@@ -219,7 +224,8 @@ final class CleanupLevelTests: XCTestCase {
         )
         let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: .full)
 
-        XCTAssert(prompt.contains("Format naturally for general use"), "Browser should get generic formatting")
+        XCTAssertFalse(prompt.contains("Keep code, symbols"), "Full prompt for browser should not include code instructions")
+        XCTAssertFalse(prompt.contains("Keep commands, flags"), "Full prompt for browser should not include terminal instructions")
     }
 
     // MARK: - Field Type Constraints
@@ -234,7 +240,7 @@ final class CleanupLevelTests: XCTestCase {
         for level in CleanupLevel.allCases {
             let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: level)
             XCTAssert(
-                prompt.contains("single-line field"),
+                prompt.contains("Output one line only"),
                 "\(level.displayName) prompt should include single-line constraint"
             )
         }
@@ -250,7 +256,7 @@ final class CleanupLevelTests: XCTestCase {
         for level in CleanupLevel.allCases {
             let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: level)
             XCTAssertFalse(
-                prompt.contains("single-line"),
+                prompt.contains("Output one line only"),
                 "\(level.displayName) prompt should NOT include single-line constraint for multiLine"
             )
         }
@@ -264,8 +270,8 @@ final class CleanupLevelTests: XCTestCase {
         for level in CleanupLevel.allCases {
             let prompt = LocalLLMProcessor.buildSystemPrompt(for: context, cleanupLevel: level)
             XCTAssert(
-                prompt.contains("Output ONLY the cleaned text"),
-                "\(level.displayName) prompt should end with output instruction"
+                prompt.contains("Return only the cleaned text"),
+                "\(level.displayName) prompt should include output instruction"
             )
         }
     }

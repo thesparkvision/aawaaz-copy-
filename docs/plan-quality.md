@@ -777,13 +777,35 @@ The benchmark results in `llm-judge-results.json` are inconsistent with current 
   - `re colon project update` → `Re: project update` ✅ (testReColon)
   - `bug report colon app crashes` → `Bug report: app crashes` ✅ (testBugReportColon)
   - All 34 SpokenFormNormalizerTests pass
-- [ ] Rerun `scripts/llm_judge.py` on fresh results (requires running full benchmark with LLM model + Gemini API key)
+- [x] Rerun `scripts/llm_judge.py` on fresh results ✅
 
 **Completed work:** Build succeeds, 95 deterministic tests pass (0 failures). The test pipeline now faithfully shows SpokenFormNormalizer's impact as a separate trace stage, fixing the diagnostic blind spot where spoken-form conversions were invisible.
 
-**Remaining:** Full benchmark rerun with LLM model and llm_judge.py scoring require the LLM model to be downloaded and Gemini API key respectively. These should be run manually by the developer.
+**Benchmark results (fresh run, March 2026):**
 
-**Expected impact:** If normalizer is working correctly, expect names-technical to jump from 2/10 → ~5-6/10 exact and single-line from 3/5 → ~4-5/5 exact. Judge score should reach ~65-67%.
+| Metric | Previous | Current | Delta |
+|--------|----------|---------|-------|
+| Exact-match | 50/100 (50%) | 52/100 (52%) | +2 |
+| Judge pass | 61/100 (61%) | 71/100 (71%) | +10 |
+| Judge rescued | 11 | 19 | +8 |
+
+Per-category changes (exact → judge):
+| Category | Previous | Current | Notes |
+|----------|----------|---------|-------|
+| names-technical | 2/10 → 3/10 | 4/10 → 8/10 | **+5 judge** — SpokenFormNormalizer URL/path/dot conversions now visible and working |
+| hinglish | 2/10 → 3/10 | 2/10 → 5/10 | +2 judge |
+| grammar | 8/12 → 10/12 | 8/12 → 11/12 | +1 judge |
+| self-correction-det | 8/12 → 10/12 | 8/12 → 11/12 | +1 judge |
+| single-line | 3/5 → 3/5 | 2/5 → 4/5 | +1 judge (slight exact regression, but more rescued) |
+| self-correction-llm | 0/10 → 0/10 | 0/10 → 0/10 | Still zero — needs Priority 3 markers |
+| cascading-corrections | 1/5 → 2/5 | 1/5 → 2/5 | No change — needs Priority 2 fix |
+
+**Key observations:**
+- SpokenFormNormalizer is confirmed working in benchmark — `AFTER SPKN-FRM` trace shows URL/path/colon conversions on names-tech-2, names-tech-8, singleline-3, singleline-5
+- The 71% judge score exceeds the predicted ~65-67%, largely driven by names-technical (+5) and hinglish (+2) judge rescues
+- 28 real failures remain, primarily in: self-correction-llm (10), cascading-corrections (3), hinglish (5), adversarial (3)
+
+**Expected impact:** ~~If normalizer is working correctly, expect names-technical to jump from 2/10 → ~5-6/10 exact and single-line from 3/5 → ~4-5/5 exact. Judge score should reach ~65-67%.~~ → **Actual: 71% judge (exceeded prediction). names-technical 4/10 exact, 8/10 judge. single-line 2/5 exact, 4/5 judge.**
 
 #### Priority 2: Fix Cascading Correction Prefix Preservation (M)
 

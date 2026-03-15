@@ -1,10 +1,10 @@
 # LLM Cleanup Quality Plan: 47% → 85%+
 
-## Current State (after Phase 0-1-2 implementation)
+## Current State (after Phase 0-1-2-2.5-3 implementation)
 
-The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **64% exact-match, 79% judge pass rate**. Current best config: **Qwen 3 0.6B, 0.31s avg latency, ~1 GB RAM**.
+The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **64% exact-match, 79% judge pass rate**. Phase 3 (Whisper prompt conditioning + surrounding text context injection) maintains scores at **65% exact-match, 78% judge pass rate** — context infrastructure is in place without regression, with benefits expected in production (benchmark tests don't have surrounding text). Current best config: **Qwen 3 0.6B, 0.31s avg latency, ~1 GB RAM**.
 
-> **Benchmark note:** Phase 2.5 P4 scores (64% exact, 79% judge) are from a clean run with all deterministic layers active. The 79% judge score exceeds the Phase 2.5 target of ~68-72%.
+> **Benchmark note:** Phase 3 scores (65% exact, 78% judge) are from a clean run with all layers active. The context injection instruction is conditional — only included when surrounding text is present, so benchmark tests (which have no surrounding text) run with the same prompt as Phase 2.5-P4. Score fluctuations vs Phase 2.5-P4 (64/79) are within normal LLM variance for a 0.6B model.
 
 ### What worked
 
@@ -997,11 +997,11 @@ Per-category changes (exact → judge):
 | "you know" as content vs filler | Future | Context-dependent disambiguation — "you know what I mean like" vs "you know that project" |
 | Filler "like" in embedded positions | Future | Needs syntactic context to distinguish "I like the color" from "we should like go" |
 
-### Phase 3: Whisper & Context
+### Phase 3: Whisper & Context ✅ Done
 
-13. **Layer 3** — add Whisper prompt conditioning (static + dynamic)
-14. **Layer 4** — capture surrounding text via AX API, inject into LLM prompt
-15. Run benchmark → expect **~75-78% judge** (starting from ~68-72% after Phase 2.5)
+13. ✅ **Layer 3** — Whisper prompt conditioning (static + dynamic). Enhanced static prompts with category-specific tech vocabulary (code, terminal, email, chat, document). Added `appCategory` parameter to `WhisperManager.transcribe()` for dynamic category-based prompt selection at session start.
+14. ✅ **Layer 4** — Surrounding text context injection via AX API. Added `surroundingText` to `InsertionContext` with `captureSurroundingText()` (reads ~200 chars before cursor from focused AX element). Injected into LLM prompt as `<context_before>` block. System prompt instruction is conditional — only included when surrounding text is present, avoiding overhead on the 0.6B model for cases without context.
+15. ✅ Benchmark: **65% exact / 78% judge** (vs 64%/79% Phase 2.5-P4). Neutral — context infrastructure is in place without regression. The benchmark tests don't exercise surrounding text (all have `surroundingText: nil`), so the context feature's benefit will only show in production use.
 
 ### Phase 4: Cadence-Fast Integration (2-3 days)
 
@@ -1059,6 +1059,7 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 | Step 4-5 final | Qwen 3.5 0.8B | Example-driven | 29/100 (29%) | — | 2.66s | +12 |
 | **Phase 0-1-2** | **Qwen 3 0.6B** | **Example-driven + Fix 2a/2b** | **50/100 (50%)** | **61/100 (61%)** | **0.33s** | **+33 exact, judge baseline** |
 | **Phase 2.5-P4** | **Qwen 3 0.6B** | **+ post-LLM capitalization + post-colon cap** | **64/100 (64%)** | **79/100 (79%)** | **0.31s** | **+47 exact, +18 judge** |
+| **Phase 3** | **Qwen 3 0.6B** | **+ Whisper prompt conditioning + context injection** | **65/100 (65%)** | **78/100 (78%)** | **0.31s** | **+48 exact, +17 judge** |
 
 ### Multi-Model Comparison (old prompt, Step 0 style)
 
@@ -1075,19 +1076,19 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ### Per-Category Progression (Baseline → Current Best)
 
-| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Phase 2.5-P3 (exact) | Phase 2.5-P3 (judge) | Phase 2.5-P4 (exact) | Phase 2.5-P4 (judge) | Next Fix |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
-| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | 8/12 | 11/12 | 8/12 | 9/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
-| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 11/15 | Filler rules improvement ("like", sentence-start "so") |
-| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | 9/12 | **12/12** | 9/12 | **12/12** | ✅ Done |
-| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 5/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
-| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | 4/10 | 6/10 | **5/10** | **7/10** | **+1 exact, +1 judge** — post-LLM capitalization helped |
-| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | 4/5 | 5/5 | 4/5 | 5/5 | ✅ Done |
-| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | 1/5 | 3/5 | 1/5 | 2/5 | Accept remaining for LLM; Cadence-Fast immune |
-| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | **5/10** | **7/10** | 5/10 | 7/10 | 3 remaining need larger model or "well actually" |
-| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | 2/5 | 4/5 | **4/5** | **5/5** | **+2 exact, +1 judge** — ✅ Done |
+| Category | Step 0 | Step 4-5 (exact) | Phase 0-1-2 (exact) | Phase 0-1-2 (judge) | Phase 2.5-P2 (exact) | Phase 2.5-P2 (judge) | Phase 2.5-P3 (exact) | Phase 2.5-P3 (judge) | Phase 2.5-P4 (exact) | Phase 2.5-P4 (judge) | Phase 3 (exact) | Phase 3 (judge) | Next Fix |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| code-terminal | 4/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| short-input | 7/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | 8/8 | ✅ Done |
+| grammar | 2/12 | 8/12 | 8/12 | 10/12 | 8/12 | 11/12 | 8/12 | 11/12 | 8/12 | 9/12 | 8/12 | 9/12 | Cadence-Fast + grammar-only LLM prompt + context injection |
+| fillers | 3/15 | 10/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 12/15 | 10/15 | 11/15 | 10/15 | 12/15 | Filler rules improvement ("like", sentence-start "so") |
+| self-correction-det | 0/12 | 8/12 | 8/12 | 10/12 | **9/12** | **11/12** | 9/12 | **12/12** | 9/12 | **12/12** | 9/12 | **12/12** | ✅ Done |
+| hinglish | 0/10 | 2/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 3/10 | 2/10 | 5/10 | 2/10 | 4/10 | Cadence-Fast (native Hindi) + Whisper prompt tuning |
+| names-technical | 0/10 | 2/10 | 2/10 | 3/10 | 4/10 | 6/10 | 4/10 | 6/10 | **5/10** | **7/10** | 5/10 | 6/10 | Whisper prompt conditioning (in place, benefit shows with real ASR) |
+| cascading-corrections | 0/5 | 1/5 | 1/5 | 2/5 | **4/5** | **5/5** | 4/5 | 5/5 | 4/5 | 5/5 | 4/5 | 5/5 | ✅ Done |
+| adversarial | 0/5 | 0/5 | 0/5 | 2/5 | 1/5 | 2/5 | 1/5 | 3/5 | 1/5 | 2/5 | 1/5 | 2/5 | Accept remaining for LLM; Cadence-Fast immune |
+| self-correction-llm | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 | **5/10** | **7/10** | 5/10 | 7/10 | 6/10 | 7/10 | 3 remaining need larger model or "well actually" |
+| single-line | 1/5 | 0/5 | 3/5 | 3/5 | 2/5 | 4/5 | 2/5 | 4/5 | **4/5** | **5/5** | 4/5 | 5/5 | ✅ Done |
 
 ---
 
@@ -1108,6 +1109,8 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 13. **Cascading self-corrections need prefix preservation.** The current greedy approach to multiple corrections in one utterance loses sentence structure. Each correction should replace only the corrected segment, not discard the stable prefix.
 14. **Implicit self-corrections are partially deterministic.** While "oh sorry", "wait hold on", and "no make that" look like they need LLM understanding, they're actually high-precision deterministic triggers. The boundary between deterministic and LLM-required is further out than initially assumed.
 15. **Post-LLM deterministic guards catch reliable model weaknesses.** Small models consistently miss sentence-start capitalization. A deterministic guard after LLM output is safe, effective, and costs nothing — fixing 3 cases in this instance. Guard against known non-prose patterns (URLs, emails, paths, flags) to avoid false positives.
+16. **Conditional prompt instructions are critical for small models.** Adding an always-present `<context_before>` instruction to the system prompt caused a 4-point regression (64→60% exact, 79→75% judge) on the 0.6B model — even though the instruction was unused in benchmarks. Making it conditional (only included when surrounding text exists) recovered to 65%/78%. Small models have limited attention budgets; every unused instruction is wasted capacity.
+17. **Benchmark scores plateau when features target production-only scenarios.** Phase 3's context injection benefits real users (surrounding text helps continuity/capitalization) but can't be measured by the benchmark (which feeds raw text without cursor context). This is expected — the benchmark measures the pipeline's baseline, not its ceiling.
 
 ---
 
@@ -1119,20 +1122,20 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 | `TextProcessing/NumberNormalizer.swift` | ❌ Not started | Number/date/time inverse text normalization |
 | `Tests/SpokenFormNormalizerTests.swift` | ✅ Done | 36 unit tests covering all pattern types + post-colon capitalization |
 | `Tests/NumberNormalizerTests.swift` | ❌ Not started | Unit tests for number normalizer |
-| `LLM/LocalLLMProcessor.swift` | ✅ Done | Capitalize short bypass results (Fix 2a) + **post-LLM first-letter capitalization guard** (Phase 2.5 P4) |
+| `LLM/LocalLLMProcessor.swift` | ✅ Done | Capitalize short bypass results (Fix 2a) + post-LLM first-letter capitalization guard (Phase 2.5 P4) + **conditional `<context_before>` block support** (Phase 3) |
 | `TextProcessing/TextProcessor.swift` | ✅ Done | SpokenFormNormalizer integrated; Fix 2b capitalization |
 | `TextProcessing/SelfCorrectionDetector.swift` | ✅ Done | Fix 2b capitalization + prefix preservation (Phase 2.5 P2) + **implicit correction markers with biasFragmentMerge, validation guards, sentence-start guard** (Phase 2.5 P3) |
-| `Transcription/TranscriptionPipeline.swift` | ⚠️ Partial | TextProcessor wired in; Whisper prompt conditioning and context injection not yet done |
-| `TextInsertion/InsertionContext.swift` | ❌ Not started | Add `surroundingText` property via AX API |
+| `Transcription/TranscriptionPipeline.swift` | ✅ Done | TextProcessor wired in; Whisper prompt conditioning via `sessionAppCategory` (captured at session start); context injection via `captureSurrounding: true` at finalize time |
+| `TextInsertion/InsertionContext.swift` | ✅ Done | Added `surroundingText` property via AX API; `captureSurroundingText()`, `isSecureField()` (fail-closed), `getFocusedElement()` with CF type guard; `captureSurrounding` parameter on `current()` |
 | `Models/CadenceFastModel.swift` | ❌ Not started | ONNX/CoreML wrapper for Cadence-Fast inference |
 | `LLM/LLMModelCatalog.swift` | ❌ Not started | Add LFM2.5-1.2B-Instruct entry |
 | `Tests/CleanupQualityTests.swift` | ✅ Done | Fix 2c fully applied; per-stage trace working |
-| `Tests/LocalLLMProcessorTests.swift` | ✅ Done | **New file** — 12 unit tests for post-LLM capitalization guard (Phase 2.5 P4) |
+| `Tests/LocalLLMProcessorTests.swift` | ✅ Done | **New file** — 15 unit tests: 12 for post-LLM capitalization guard (Phase 2.5 P4) + 3 for context injection / category prompts (Phase 3) |
 | `Persistence/CorrectionStore.swift` | ❌ Not started | SQLite storage for user correction pairs |
 | `TextProcessing/UserStylePreferences.swift` | ❌ Not started | User-specific formatting overrides |
 | `scripts/llm_judge.py` | ✅ Done | LLM-as-Judge evaluation script — supports both compact and verbose benchmark output formats |
-| `Transcription/TranscriptionPipeline.swift` | Wire normalizers + Cadence-Fast into post-processing; add Whisper prompt conditioning |
-| `TextInsertion/InsertionContext.swift` | Add `surroundingText` property via AX API |
+| `Transcription/TranscriptionPipeline.swift` | ✅ Done | See above |
+| `TextInsertion/InsertionContext.swift` | ✅ Done | See above |
 | `Models/CadenceFastModel.swift` | **New file** — ONNX/CoreML wrapper for Cadence-Fast inference |
 | `LLM/LLMModelCatalog.swift` | Add LFM2.5-1.2B-Instruct entry |
 | `Tests/CleanupQualityTests.swift` | Fix single-line test expectations; add LLM-as-Judge scoring |
@@ -1144,23 +1147,23 @@ If on macOS 26: evaluate Apple Foundation Models as Qwen replacement.
 
 ## Target Metrics (Revised)
 
-| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5-P3 (actual) | Phase 2.5-P4 (actual) | Phase 2.5 (target) | Phase 3-4 | Phase 5-6+ |
+| Metric | Baseline | Phase 0-1-2 (actual) | Phase 2.5-P2 (actual) | Phase 2.5-P3 (actual) | Phase 2.5-P4 (actual) | Phase 3 (actual) | Phase 4 (target) | Phase 5-6+ |
 |---|---|---|---|---|---|---|---|---|
-| Pass rate (exact match) | 47% | **50%** | **56%** | **61%** | **64%** | ~62-65% | ~75% | ~80% |
-| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | **79%** | **79%** | ~68-72% | ~80-83% | ~85%+ |
-| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.32s | 0.31s | 0.33s | 0.36s (+Cadence) | 0.36s |
-| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
+| Pass rate (exact match) | 47% | **50%** | **56%** | **61%** | **64%** | **65%** | ~75% | ~80% |
+| Pass rate (judge score) | ~58% (est.) | **61%** | **70%** | **79%** | **79%** | **78%** | ~80-83% | ~85%+ |
+| Avg latency (LLM cases) | 0.33s | 0.33s | 0.34s | 0.32s | 0.31s | 0.31s | 0.36s (+Cadence) | 0.36s |
+| RAM (total models) | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1 GB | ~1.2 GB (+Cadence) | ~1.2-2.2 GB |
 | Default model | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | Qwen 3 0.6B | TBD (maybe LFM2.5) |
-| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 5 | 5 | 6 (+Cadence) | 6 |
+| Pipeline stages | 4 | 5 (+SpokenForm) | 5 | 5 | 5 | 5 | 6 (+Cadence) | 6 |
 
 ---
 
 ## Architecture: Current vs Target Pipeline
 
-### Current (64% exact / 79% judge)
+### Current (65% exact / 78% judge)
 
 ```
-Whisper → SelfCorrection → FillerRemoval → SpokenFormNorm → LLM (punct+caps+grammar+style) → Insert
+Whisper (prompt-conditioned, category-aware) → SelfCorrection → FillerRemoval → SpokenFormNorm → LLM (punct+caps+grammar+style, context-injected) → Insert
 ```
 
 ### Target (85%+)

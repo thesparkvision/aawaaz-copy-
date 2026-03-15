@@ -76,6 +76,10 @@ final class TranscriptionPipeline {
     /// run once all pending transcriptions complete.
     private var awaitingFinalization = false
 
+    /// App category captured at session start for Whisper prompt conditioning.
+    /// Stable across all segments in one recording session.
+    private var sessionAppCategory: InsertionContext.AppCategory?
+
     /// Timeout for finalization — if all pending transcriptions don't complete
     /// within this duration after stop, the overlay is dismissed as a safety net.
     private static let finalizationTimeoutSeconds: TimeInterval = 10.0
@@ -105,6 +109,10 @@ final class TranscriptionPipeline {
         pendingTranscriptionCount = 0
         awaitingFinalization = false
         cancelFinalizationTimeout()
+
+        // Capture app category at session start for Whisper prompt conditioning.
+        // This stays stable across all segments in one dictation session.
+        sessionAppCategory = InsertionContext.current()?.appCategory
 
         // Ensure microphone permission
         if !AudioCaptureManager.microphonePermissionGranted {
@@ -242,7 +250,8 @@ final class TranscriptionPipeline {
             let result = try await whisperManager.transcribe(
                 samples: samples,
                 language: appState.selectedLanguage,
-                hinglishScript: appState.selectedHinglishScript
+                hinglishScript: appState.selectedHinglishScript,
+                appCategory: sessionAppCategory
             )
 
             // Check session validity after the await
@@ -307,7 +316,8 @@ final class TranscriptionPipeline {
 
         // Snapshot the insertion context early — before any async model work —
         // so context doesn't drift if the user switches apps during LLM loading.
-        let insertionContext = InsertionContext.current() ?? .unknown
+        // Opt in to surrounding text capture for LLM context injection.
+        let insertionContext = InsertionContext.current(captureSurrounding: true) ?? .unknown
 
         // Run the post-processing chain
         let processedText = await postProcess(rawText, context: insertionContext)
@@ -342,6 +352,7 @@ final class TranscriptionPipeline {
         accumulatedSegments = []
         pendingTranscriptionCount = 0
         awaitingFinalization = false
+        sessionAppCategory = nil
         cancelFinalizationTimeout()
     }
 

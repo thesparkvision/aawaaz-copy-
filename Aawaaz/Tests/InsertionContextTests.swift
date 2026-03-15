@@ -110,5 +110,39 @@ final class InsertionContextTests: XCTestCase {
         XCTAssertEqual(unknown.bundleIdentifier, "")
         XCTAssertEqual(unknown.fieldType, .unknown)
         XCTAssertEqual(unknown.appCategory, .other)
+        XCTAssertNil(unknown.surroundingText)
+    }
+
+    // MARK: - Surrounding Text
+
+    func testSurroundingTextDefaultsToNil() {
+        let context = InsertionContext(
+            appName: "Notes",
+            bundleIdentifier: "com.apple.Notes",
+            fieldType: .multiLine
+        )
+        XCTAssertNil(context.surroundingText)
+    }
+
+    func testSurroundingTextCanBeSet() {
+        let context = InsertionContext(
+            appName: "Notes",
+            bundleIdentifier: "com.apple.Notes",
+            fieldType: .multiLine,
+            surroundingText: "Thanks for your email, I wanted to follow up on"
+        )
+        XCTAssertEqual(context.surroundingText, "Thanks for your email, I wanted to follow up on")
+    }
+
+    func testSurroundingTextPreservedAsSendable() {
+        // Verify InsertionContext with surroundingText conforms to Sendable
+        let context = InsertionContext(
+            appName: "Mail",
+            bundleIdentifier: "com.apple.mail",
+            fieldType: .multiLine,
+            surroundingText: "Previous sentence."
+        )
+        let sendableCheck: any Sendable = context
+        XCTAssertNotNil(sendableCheck)
     }
 }

@@ -100,4 +100,30 @@ final class LocalLLMProcessorTests: XCTestCase {
             "www.example.com"
         )
     }
+
+    // MARK: - buildSystemPrompt context injection
+
+    func testSystemPromptIncludesContextInstruction() {
+        let ctx = InsertionContext(appName: "Notes", bundleIdentifier: "com.apple.Notes", fieldType: .multiLine)
+        // Context instruction only included when flag is true
+        let promptWithContext = LocalLLMProcessor.buildSystemPrompt(for: ctx, cleanupLevel: .medium, includeSurroundingContextInstruction: true)
+        XCTAssertTrue(promptWithContext.contains("context_before"), "System prompt should mention context_before block when enabled")
+        XCTAssertTrue(promptWithContext.contains("Do not copy or continue it"), "System prompt should warn against copying context")
+
+        // Without flag, context instruction should be absent
+        let promptWithout = LocalLLMProcessor.buildSystemPrompt(for: ctx, cleanupLevel: .medium)
+        XCTAssertFalse(promptWithout.contains("context_before"), "System prompt should NOT mention context_before when disabled")
+    }
+
+    func testSystemPromptCodeCategory() {
+        let ctx = InsertionContext(appName: "Xcode", bundleIdentifier: "com.apple.dt.Xcode", fieldType: .multiLine)
+        let prompt = LocalLLMProcessor.buildSystemPrompt(for: ctx, cleanupLevel: .full)
+        XCTAssertTrue(prompt.contains("code"), "Code context should mention code in prompt")
+    }
+
+    func testSystemPromptTerminalCategory() {
+        let ctx = InsertionContext(appName: "Terminal", bundleIdentifier: "com.apple.Terminal", fieldType: .multiLine)
+        let prompt = LocalLLMProcessor.buildSystemPrompt(for: ctx, cleanupLevel: .full)
+        XCTAssertTrue(prompt.contains("commands"), "Terminal context should mention commands in prompt")
+    }
 }

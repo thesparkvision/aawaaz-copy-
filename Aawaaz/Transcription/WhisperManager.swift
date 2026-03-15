@@ -73,8 +73,9 @@ actor WhisperManager {
     ///   - samples: PCM audio at 16 kHz, mono, Float32.
     ///   - language: Language mode controlling auto-detect vs forced language.
     ///   - hinglishScript: Script preference for Hinglish output (only used when language is `.hinglish`).
+    ///   - appCategory: App category for context-specific prompt conditioning.
     /// - Returns: Transcription result with full text and per-segment detail.
-    func transcribe(samples: [Float], language: LanguageMode = .auto, hinglishScript: HinglishScript = .romanized) throws -> TranscriptionResult {
+    func transcribe(samples: [Float], language: LanguageMode = .auto, hinglishScript: HinglishScript = .romanized, appCategory: InsertionContext.AppCategory? = nil) throws -> TranscriptionResult {
         guard let ctx = context else {
             throw WhisperError.modelNotLoaded
         }
@@ -114,20 +115,34 @@ actor WhisperManager {
 
         // Condition Whisper's decoder via initial_prompt to improve punctuation,
         // capitalization, and proper noun spelling. Zero latency cost.
+        // Base prompt sets punctuation/capitalization style. Category-specific
+        // add-ons bias the decoder toward relevant vocabulary.
         let initialPromptCStr: UnsafeMutablePointer<CChar>?
         let prompt: String
         switch language {
         case .hinglish:
             switch hinglishScript {
             case .romanized:
-                prompt = "Yeh ek Hinglish example hai. Meeting schedule karna hai, please email bhej do."
+                prompt = "Yeh ek Hinglish meeting hai. Humein Kubernetes deploy karna hai, please Docker image bhej do. Next.js aur React mein changes hain."
             case .devanagari:
-                prompt = "यह एक Hinglish example है। Meeting schedule करना है, please email भेज दो।"
+                prompt = "यह एक Hinglish meeting है। हमें Kubernetes deploy करना है, please Docker image भेज दो। Next.js और React में changes हैं।"
             case .mixed:
                 prompt = ""
             }
         case .english, .auto:
-            prompt = "Hello, this is a properly formatted dictation with correct punctuation and capitalization."
+            var base = "Hello, this is a properly formatted dictation with correct punctuation and capitalization."
+            // Category-specific vocabulary conditioning
+            switch appCategory {
+            case .code:
+                base += " Technical terms: Kubernetes, PostgreSQL, TypeScript, Next.js, React, Docker, Terraform, npm, API."
+            case .terminal:
+                base += " Commands: git commit, npm install, docker build, kubectl apply, ssh, sudo."
+            case .email:
+                base += " Professional writing with proper salutations and closings."
+            default:
+                base += " Names and places should be capitalized properly."
+            }
+            prompt = base
         case .hindi:
             prompt = ""
         }

@@ -124,6 +124,65 @@ final class PunctuationModelRunnerTests: XCTestCase {
         XCTAssertEqual(state2, .loaded)
     }
     
+    // MARK: - Input Analysis
+
+    func testIsAlreadyPunctuated() {
+        // Should be detected as punctuated (skip model)
+        XCTAssertTrue(PunctuationModelRunner.isAlreadyPunctuated("Can you please tell me?"))
+        XCTAssertTrue(PunctuationModelRunner.isAlreadyPunctuated("Hello! How are you"))
+        XCTAssertTrue(PunctuationModelRunner.isAlreadyPunctuated("First sentence. Second sentence."))
+        XCTAssertTrue(PunctuationModelRunner.isAlreadyPunctuated("I don't know what's going on here. Can you please tell me?"))
+        // Internal period (period not at end)
+        XCTAssertTrue(PunctuationModelRunner.isAlreadyPunctuated("I don't know. can you tell me"))
+
+        // Should NOT be detected as punctuated (run model)
+        XCTAssertFalse(PunctuationModelRunner.isAlreadyPunctuated("hello world how are you"))
+        XCTAssertFalse(PunctuationModelRunner.isAlreadyPunctuated("i think we should meet tomorrow"))
+        XCTAssertFalse(PunctuationModelRunner.isAlreadyPunctuated(""))
+        // Single trailing period is NOT enough — could be a run-on
+        XCTAssertFalse(PunctuationModelRunner.isAlreadyPunctuated("just a single sentence with a period at the end."))
+    }
+
+    func testNormalizeForModel() {
+        XCTAssertEqual(
+            PunctuationModelRunner.normalizeForModel("Hello World, how are you?"),
+            "hello world how are you")
+        XCTAssertEqual(
+            PunctuationModelRunner.normalizeForModel("I don't know."),
+            "i don't know")
+        XCTAssertEqual(
+            PunctuationModelRunner.normalizeForModel("already lowercase no punct"),
+            "already lowercase no punct")
+        // Preserve punctuation between digits
+        XCTAssertEqual(
+            PunctuationModelRunner.normalizeForModel("version 1.2.3 at 10:30"),
+            "version 1.2.3 at 10:30")
+        XCTAssertEqual(
+            PunctuationModelRunner.normalizeForModel("Pi is 3.14 exactly."),
+            "pi is 3.14 exactly")
+    }
+
+    func testSanitizePunctuation() {
+        XCTAssertEqual(PunctuationModelRunner.sanitizePunctuation("Hello??"), "Hello?")
+        XCTAssertEqual(PunctuationModelRunner.sanitizePunctuation("Hello.."), "Hello.")
+        XCTAssertEqual(PunctuationModelRunner.sanitizePunctuation("Hello!!"), "Hello!")
+        XCTAssertEqual(PunctuationModelRunner.sanitizePunctuation("Hello ."), "Hello.")
+        // Normal text passes through unchanged
+        XCTAssertEqual(PunctuationModelRunner.sanitizePunctuation("Hello, world."), "Hello, world.")
+    }
+
+    func testSkipOnPunctuatedInput() async throws {
+        try XCTSkipUnless(PunctuationModelRunner.isAvailable,
+            "Punct model not found in HuggingFace cache")
+
+        try await runner.loadModel(useANE: false)
+
+        // Pre-punctuated text with ? should be returned unchanged
+        let input = "I don't know what's going on here. Can you please tell me?"
+        let result = try await runner.predict(input)
+        XCTAssertEqual(result, input, "Punctuated input should pass through unchanged")
+    }
+
     // MARK: - Latency
     
     func testInferenceLatency() async throws {

@@ -178,6 +178,22 @@ final class SelfCorrectionDetectorTests: XCTestCase {
         )
     }
 
+    func testScratchThatAcrossSentencesWithFragmentRepair() {
+        // When the repair after "scratch that" is a short fragment, merge
+        // with the previous sentence rather than discarding all context.
+        XCTAssertEqual(
+            detector.detectAndResolve("Can you send this email to Mark. Oh sorry, scratch that to John."),
+            "Can you send this email to John."
+        )
+    }
+
+    func testScratchThatAcrossSentencesWithPrepositionalFragment() {
+        XCTAssertEqual(
+            detector.detectAndResolve("Book a flight for Monday. Scratch that for Tuesday."),
+            "Book a flight for Tuesday."
+        )
+    }
+
     func testActuallyNoAcrossSentences() {
         XCTAssertEqual(
             detector.detectAndResolve("Send it to Mark. Actually no, send it to John."),

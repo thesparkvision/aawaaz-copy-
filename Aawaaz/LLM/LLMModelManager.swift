@@ -1,4 +1,5 @@
 import Foundation
+import MLX
 import MLXLMCommon
 import MLXLLM
 
@@ -86,6 +87,8 @@ final class LLMModelManager {
                         self.downloadProgress = fraction
                     }
                 }
+                // Release GPU buffers allocated during the load-for-download
+                Memory.clearCache()
 
                 await MainActor.run { [weak self] in
                     guard let self else { return }

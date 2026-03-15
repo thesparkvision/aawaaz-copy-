@@ -1,8 +1,8 @@
 # LLM Cleanup Quality Plan: 47% → 85%+
 
-## Current State (after Phase 0-1-2-2.5-3-4S2 implementation)
+## Current State (after Phase 0-1-2-2.5-3-4S2 implementation + bug fixes)
 
-The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **64% exact-match, 79% judge pass rate**. Phase 3 (Whisper prompt conditioning + surrounding text context injection) maintains scores at **65% exact-match, 78% judge pass rate**. Phase 4 Step 2 (punctuation model Swift integration) moved scores to **61% exact-match, 84% judge pass rate** — exact match dropped slightly (expected outputs were tuned pre-punct-model) but real quality improved significantly. Current best config: **Qwen 3 0.6B + xlm-roberta punct model, 0.31s LLM + 0.08s punct avg latency, ~2 GB RAM**.
+The example-driven prompt redesign moved pass rate from **17% → 47%** on the 100-case benchmark. Phase 0-1-2 implementation (LLM-as-Judge, pipeline fixes, SpokenFormNormalizer) moved the measured scores to **50% exact-match, 61% judge pass rate**. Phase 2.5 (stabilization + deterministic fixes) moved scores to **64% exact-match, 79% judge pass rate**. Phase 3 (Whisper prompt conditioning + surrounding text context injection) maintains scores at **65% exact-match, 78% judge pass rate**. Phase 4 Step 2 (punctuation model Swift integration) moved scores to **61% exact-match, 84% judge pass rate** — exact match dropped slightly (expected outputs were tuned pre-punct-model) but real quality improved significantly. Bug fixes (input gating, normalization, memory leak, settings UI) maintain scores at **61% exact-match, 84% judge pass rate**. Current best config: **Qwen 3 0.6B + xlm-roberta punct model, 0.31s LLM + 0.07s punct avg latency, ~2 GB RAM**.
 
 > **Benchmark note:** Phase 3 scores (65% exact, 78% judge) are from a clean run with all layers active. The context injection instruction is conditional — only included when surrounding text is present, so benchmark tests (which have no surrounding text) run with the same prompt as Phase 2.5-P4. Score fluctuations vs Phase 2.5-P4 (64/79) are within normal LLM variance for a 0.6B model.
 
@@ -1209,6 +1209,15 @@ Per-category changes (exact → judge):
     - Punct model latency is ~80ms avg (CPU), acceptable as it runs in parallel with dictation pauses
     - Short-input category: 0% exact match but 100% judge pass — model adds correct capitalization/periods that differ from hand-tuned expected outputs
     - Code/terminal bypass works correctly: 8/8 pass with no punct model interference
+
+26. **Bug fixes (post-integration):**
+    - **"?" → "." corruption:** The punct model was trained on unpunctuated text. When Whisper output already contained punctuation, the model doubled it ("?" → "??"), and the LLM then normalized "??" to ".". Fixed with three-layer defense:
+      - `isAlreadyPunctuated()` heuristic: skips model if text contains `?`/`!`, 2+ sentence-ending marks, or any internal sentence-ending mark (period not at the very end). Single trailing period still runs the model (useful for run-ons).
+      - `normalizeForModel()`: lowercases + strips sentence punctuation before inference (matches training distribution). Preserves punctuation between digits (e.g., "3.14", "10:30").
+      - `sanitizePunctuation()`: post-model safety net that collapses `..` → `.`, `??` → `?`, `!!` → `!`, and removes spaces before punctuation.
+    - **Settings UI:** Added "Punctuation & Capitalization" section to PostProcessingSettingsView with toggles for Punctuation Model enable/disable and ANE on/off. Made section visible regardless of LLM mode (punct model is independent of LLM).
+    - **Memory leak:** `LocalLLMProcessor.unloadModel()` now calls `MLX.Memory.clearCache()` after releasing the model container. Without this, MLX's Metal buffer pool cached GPU buffers indefinitely, causing memory to grow monotonically when switching models. Also added in `LLMModelManager` after download-only container is discarded.
+    - **Test coverage:** Added 4 new tests for `isAlreadyPunctuated`, `normalizeForModel`, `sanitizePunctuation`, and `testSkipOnPunctuatedInput`. All 10 punct model tests pass. Benchmarks unchanged: **61% exact, 84% judge** (expected — fixes only affect pre-punctuated input from Whisper, not the unpunctuated benchmark inputs).
 
 ### Phase 5: LFM2.5 Evaluation (half day)
 

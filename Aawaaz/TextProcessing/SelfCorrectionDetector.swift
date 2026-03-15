@@ -163,9 +163,15 @@ struct SelfCorrectionDetector {
     /// clauses between sentences.
     ///
     /// Example: "Hey Mark. Oh sorry, scratch that. Hey John." → "Hey John."
+    ///
+    /// When the repair after the marker is a short fragment (e.g., "to John"),
+    /// attempts to merge it with the sentence before the marker to preserve
+    /// context: "Can you send this email to Mark. Oh sorry, scratch that to John."
+    /// → "Can you send this email to John."
     private func resolveStandaloneRestarts(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         var lastMarkerEnd: String.Index?
+        var lastMarkerSentenceStart: String.Index?
 
         let standaloneRestartMarkers = Self.defaultMarkers.filter(\.allowsStandaloneRestart)
 
@@ -191,6 +197,7 @@ struct SelfCorrectionDetector {
 
                     if lastMarkerEnd == nil || afterMarker > lastMarkerEnd! {
                         lastMarkerEnd = afterMarker
+                        lastMarkerSentenceStart = sentenceStartIndex(in: trimmed, before: range.lowerBound)
                     }
                 }
 
@@ -206,6 +213,29 @@ struct SelfCorrectionDetector {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !corrected.isEmpty else { return text }
+
+        // When the repair is a short fragment (≤3 tokens starting with a
+        // preposition/article), merge with the sentence before the restart
+        // clause to preserve context. Longer repairs are left as full
+        // replacements — truly complex cross-sentence repairs are better
+        // handled by the LLM stage.
+        if let sentenceStart = lastMarkerSentenceStart,
+           sentenceStart > trimmed.startIndex {
+            let repairTokens = words(in: corrected)
+            if repairTokens.count <= 3,
+               let first = repairTokens.first?.lowercased,
+               Self.fragmentLeadTokens.contains(first) {
+                let beforeSentence = String(trimmed[..<sentenceStart])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !beforeSentence.isEmpty,
+                   let prefix = preservedPrefix(for: beforeSentence, repair: corrected) {
+                    let merged = stitch(prefix: prefix, repair: corrected)
+                    if !merged.isEmpty {
+                        return normalizedSentenceStart(merged, basedOn: trimmed)
+                    }
+                }
+            }
+        }
 
         // Capitalize the first character if the original started with uppercase
         if trimmed.first?.isUppercase == true, let first = corrected.first, first.isLowercase {

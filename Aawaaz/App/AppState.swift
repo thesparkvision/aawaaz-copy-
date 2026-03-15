@@ -127,7 +127,12 @@ final class AppState {
     // Punctuation model
     /// Whether the punctuation model is used in the pipeline (before LLM).
     var punctuationModelEnabled: Bool = true {
-        didSet { UserDefaults.standard.set(punctuationModelEnabled, forKey: "punctuationModelEnabled") }
+        didSet {
+            UserDefaults.standard.set(punctuationModelEnabled, forKey: "punctuationModelEnabled")
+            if !punctuationModelEnabled {
+                Task { await pipeline.unloadPunctuationModel() }
+            }
+        }
     }
     /// Whether to use Apple Neural Engine (via CoreML EP) for punctuation model inference.
     var punctuationModelUseANE: Bool = true {

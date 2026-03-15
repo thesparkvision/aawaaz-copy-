@@ -1,4 +1,5 @@
 import Foundation
+import MLX
 import MLXLMCommon
 import MLXLLM
 
@@ -225,6 +226,11 @@ actor LocalLLMProcessor: PostProcessor {
         modelContainer = nil
         loadedModelID = nil
         modelState = .unloaded
+
+        // Release MLX GPU buffer cache. Without this, Metal buffers from the
+        // previous model stay in MLX's buffer pool and are never returned to
+        // the system, causing memory to grow monotonically when switching models.
+        Memory.clearCache()
     }
 
     /// Sets the test override model ID for loading arbitrary HuggingFace models.

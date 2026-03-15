@@ -15,8 +15,8 @@ xcuserdata/
 .swiftpm/
 Package.resolved
 
-# Models (downloaded at runtime)
-Models/
+# Models (downloaded at runtime — top-level only)
+/Models/
 
 # macOS
 .DS_Store

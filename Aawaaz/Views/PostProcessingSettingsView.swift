@@ -36,6 +36,39 @@ struct PostProcessingSettingsView: View {
                 }
             }
 
+            // MARK: - Punctuation Model
+            // Punctuation & capitalization is independent of LLM mode — always visible.
+
+            Section("Punctuation & Capitalization") {
+                Toggle("Punctuation Model", isOn: $state.punctuationModelEnabled)
+
+                if appState.punctuationModelEnabled {
+                    if PunctuationModelRunner.isAvailable {
+                        Toggle("Use Neural Engine (ANE)", isOn: $state.punctuationModelUseANE)
+                        Text("ANE accelerates inference. Disable to use CPU only.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Label(
+                            "Model files not found. Download and install the model first.",
+                            systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .foregroundStyle(.orange)
+                        .font(.callout)
+
+                        Text("""
+                        Run in Terminal:
+                        python scripts/setup_punct_model.py
+                        
+                        (from the Aawaaz project root)
+                        """)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+
             // MARK: - Model Selection & Download
 
             if appState.postProcessingMode == .local {
@@ -67,7 +100,9 @@ struct PostProcessingSettingsView: View {
                 Section("Last Transcription Preview") {
                     TranscriptionPreviewView(
                         rawText: appState.lastRawTranscription,
-                        processedText: appState.lastProcessedTranscription
+                        processedText: appState.lastProcessedTranscription,
+                        isProcessing: appState.status == .processing,
+                        postProcessingOff: appState.postProcessingMode == .off
                     )
                 }
             }
@@ -205,6 +240,8 @@ private struct LLMModelRow: View {
 private struct TranscriptionPreviewView: View {
     let rawText: String
     let processedText: String
+    let isProcessing: Bool
+    let postProcessingOff: Bool
 
     @State private var showingRaw = false
 
@@ -239,9 +276,19 @@ private struct TranscriptionPreviewView: View {
                     .textSelection(.enabled)
 
                 if processedText.isEmpty && !rawText.isEmpty {
-                    Text("LLM post-processing is off — no LLM cleanup was applied.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if isProcessing {
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Post-processing in progress…")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if postProcessingOff {
+                        Text("LLM post-processing is off — no LLM cleanup was applied.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }

@@ -1,0 +1,19 @@
+name: Build Aawaaz macOS
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build App
+        run: |
+          xcodebuild -project "Aawaaz.xcodeproj" -scheme "Aawaaz" -configuration Release CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload App
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aawaaz-macOS
+          path: build/Release/Aawaaz.app

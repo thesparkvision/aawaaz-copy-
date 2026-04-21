@@ -10,10 +10,13 @@ jobs:
 
       - name: Build App
         run: |
+          cd Aawaaz
           xcodebuild -project "Aawaaz.xcodeproj" -scheme "Aawaaz" -configuration Release CODE_SIGNING_ALLOWED=NO
+          mkdir -p ../output
+          cp -R build/Release/Aawaaz.app ../output/
 
-      - name: Upload App
+      - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: Aawaaz-macOS
-          path: build/Release/Aawaaz.app
+          name: Aawaaz-macOS-Build
+          path: output/Aawaaz.app

@@ -1,6 +1,10 @@
 name: Build Aawaaz macOS
 on: [workflow_dispatch]
 
+env:
+  BUILD_DIR: Aawaaz/build
+  OUTPUT_DIR: output
+
 jobs:
   build:
     runs-on: macos-latest
@@ -9,14 +13,51 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build App
+        id: build_step
         run: |
           cd Aawaaz
-          xcodebuild -project "Aawaaz.xcodeproj" -scheme "Aawaaz" -configuration Release CODE_SIGNING_ALLOWED=NO
-          mkdir -p ../output
-          cp -R build/Release/Aawaaz.app ../output/
+          xcodebuild -project "Aawaaz.xcodeproj" -scheme "Aawaaz" -configuration Release CODE_SIGNING_ALLOWED=NO -derivedDataPath build
+          echo "BUILD_STATUS=success" >> $GITHUB_OUTPUT
+
+      - name: Debug - Find app location
+        id: find_app
+        if: success()
+        run: |
+          echo "Searching for built app..."
+          find Aawaaz/build -name "*.app" -type d
+          APP_PATH=$(find Aawaaz/build -name "Aawaaz.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: App not found. Listing build directory structure:"
+            ls -la Aawaaz/build/Build/Products/Release/ 2>/dev/null || ls -la Aawaaz/build/ 2>/dev/null || echo "No build directory found"
+            exit 1
+          fi
+          echo "FOUND_APP=$APP_PATH" >> $GITHUB_OUTPUT
+          echo "App found at: $APP_PATH"
+
+      - name: Prepare Artifact
+        id: prepare_artifact
+        if: success()
+        run: |
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          APP_PATH="${{ steps.find_app.outputs.FOUND_APP }}"
+          echo "Copying app from: $APP_PATH"
+          cp -R "$APP_PATH" ${{ env.OUTPUT_DIR }}/
+          echo "Artifact prepared successfully"
+          ls -la ${{ env.OUTPUT_DIR }}/
 
       - name: Upload Finished App
+        id: upload_step
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Aawaaz-macOS-Build
-          path: output/Aawaaz.app
+          path: ${{ env.OUTPUT_DIR }}/Aawaaz.app
+          if-no-files-found: error
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## Build Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Status: ${{ steps.build_step.outputs.BUILD_STATUS }}" >> $GITHUB_STEP_SUMMARY
+          echo "- App Found: ${{ steps.find_app.outputs.FOUND_APP }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Upload Status: ${{ steps.upload_step.outcome }}" >> $GITHUB_STEP_SUMMARY
